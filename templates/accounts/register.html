@@ -1,0 +1,40 @@
+{% extends "base_auth.html" %}
+{% load icons %}
+{% block title %}Register · {{ SITE_NAME }}{% endblock %}
+
+{% block auth_body %}
+  <h2 class="mt-0" style="font-size:1.6rem;">Open your Vaultline account</h2>
+  <p class="subtle">Join in seconds and access the portal.</p>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ form.non_field_errors|striptags }}</span></div>
+  {% endif %}
+
+  <form method="post" novalidate style="margin-top:20px;">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="id_username">Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}<div class="form-errors">{{ form.username.errors|striptags }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label for="id_email">Email</label>
+      {{ form.email }}
+      {% if form.email.errors %}<div class="form-errors">{{ form.email.errors|striptags }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label for="id_password1">Password</label>
+      {{ form.password1 }}
+      {% if form.password1.errors %}<div class="form-errors">{{ form.password1.errors|striptags }}</div>{% endif %}
+      {% if form.password1.help_text %}<div class="form-help">{{ form.password1.help_text|safe }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label for="id_password2">Confirm password</label>
+      {{ form.password2 }}
+      {% if form.password2.errors %}<div class="form-errors">{{ form.password2.errors|striptags }}</div>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Create account {% icon "arrow-right" "icon" %}</button>
+  </form>
+
+  <p class="form-foot">Already a client? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+{% endblock %}

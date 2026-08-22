@@ -1,0 +1,57 @@
+{% load static icons %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a class="brand" href="{% url 'core:home' %}">
+        <span class="brand-logo">{% icon "shield" "icon" %}</span>
+        <span class="brand-name">Vaultline</span>
+      </a>
+      <nav class="site-nav">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard:home' %}" class="hide-sm">Dashboard</a>
+          <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-sm">Enter portal {% icon "arrow-right" "icon" %}</a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="hide-sm">Sign in</a>
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Open account</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% if messages %}
+      <div class="container" style="margin-top:16px;">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{% icon "check-circle" "icon" %}<span>{{ message }}</span></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container spread" style="flex-wrap:wrap; gap:14px;">
+      <p class="footer-note">
+        Vaultline is a fictional, simulated environment for authorized security training.
+      </p>
+      <span class="faint mono" style="font-size:.8rem;">© Vaultline</span>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/nav.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

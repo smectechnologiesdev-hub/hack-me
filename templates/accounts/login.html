@@ -1,0 +1,30 @@
+{% extends "base_auth.html" %}
+{% load icons %}
+{% block title %}Log in · {{ SITE_NAME }}{% endblock %}
+
+{% block auth_body %}
+  <h2 class="mt-0" style="font-size:1.6rem;">Sign in to Vaultline</h2>
+  <p class="subtle">Access your secure account.</p>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ form.non_field_errors|striptags }}</span></div>
+  {% endif %}
+
+  <form method="post" novalidate style="margin-top:20px;">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="id_username">Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}<div class="form-errors">{{ form.username.errors|striptags }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label for="id_password">Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}<div class="form-errors">{{ form.password.errors|striptags }}</div>{% endif %}
+    </div>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in {% icon "arrow-right" "icon" %}</button>
+  </form>
+
+  <p class="form-foot">New to Vaultline? <a href="{% url 'accounts:register' %}">Open an account</a></p>
+{% endblock %}

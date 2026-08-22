@@ -1,0 +1,57 @@
+{% extends "base_app.html" %}
+{% load icons %}
+{% block title %}My Labs · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}My Labs{% endblock %}
+
+{% block topbar_actions %}
+  <form method="post" action="{% url 'labs:start' %}" class="row">
+    {% csrf_token %}
+    <select name="difficulty" aria-label="Difficulty" style="width:auto; padding:9px 12px;">
+      <option value="">Any difficulty</option>
+      <option value="EASY">Easy</option>
+      <option value="MEDIUM">Medium</option>
+      <option value="HARD">Hard</option>
+    </select>
+    <button type="submit" class="btn btn-primary">{% icon "plus" "icon" %} New lab</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>Your labs</h1>
+      <p class="sub">Each lab is fully isolated to your account.</p>
+    </div>
+  </div>
+
+  {% if labs %}
+    <div class="table-wrap fade-in-up">
+      <table class="data">
+        <thead>
+          <tr><th>Token</th><th>Username</th><th>Wordlist</th><th>Progress</th><th>Status</th><th>Started</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for lab in labs %}
+            <tr>
+              <td class="mono">{{ lab.lab_token|slice:":12" }}…</td>
+              <td class="mono">{{ lab.username }}</td>
+              <td>{{ lab.wordlist.name }} <span class="faint">· {{ lab.wordlist.get_difficulty_display }}</span></td>
+              <td class="mono">{{ lab.attempt_count }} / {{ lab.max_attempts }}</td>
+              <td>{% include "labs/_status_badge.html" with status=lab.status %}</td>
+              <td class="faint mono">{{ lab.started_at|date:"M d, H:i" }}</td>
+              <td><a href="{% url 'labs:detail' lab.lab_token %}" class="chip">Open {% icon "arrow-right" "icon" %}</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="empty">
+        <div class="empty-ico">{% icon "layers" "icon" %}</div>
+        <h3>No labs yet</h3>
+        <p>Start your first lab using the button above.</p>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

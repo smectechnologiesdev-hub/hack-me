@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------------------
+# Brute-Force Authentication Training Lab — Python dependencies
+#
+# Validated on Python 3.14 with Django 6.0 (Django 6.0 supports Python
+# 3.12–3.14).  If you run an older Python (3.11), pin Django to 5.2 LTS
+# instead — the code is compatible with both.
+# ---------------------------------------------------------------------------
+
+# Core framework
+Django==6.0.8
+djangorestframework==3.16.1
+
+# Real-time WebSockets
+channels==4.2.0
+channels-redis==4.2.1
+daphne==4.1.2
+
+# Configuration / secrets
+python-dotenv==1.2.3
+dj-database-url==3.1.2
+
+# Production database driver (PostgreSQL). Commented so local SQLite dev
+# does not require build tooling. Uncomment for production installs.
+# psycopg[binary]==3.2.4
+
+# Production server option (Gunicorn + Uvicorn ASGI worker)
+gunicorn==23.0.0
+uvicorn[standard]==0.34.0
+
+# Static files in production
+whitenoise==6.12.0
+
+# Redis client (used by channels-redis and optional caching/throttling)
+redis==5.2.1
+
+# --- Testing / dev (optional) ---------------------------------------------
+requests==2.32.3          # for the end-to-end smoke test / student scripts
+websocket-client==1.8.0   # optional: exercise the live WebSocket in tests

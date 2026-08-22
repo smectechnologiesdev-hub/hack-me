@@ -1,0 +1,67 @@
+{% extends "base_app.html" %}
+{% load icons %}
+{% block title %}All attempts · Instructor{% endblock %}
+{% block page_title %}All attempts{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-outline" href="{% url 'instructor:dashboard' %}">{% icon "gauge" "icon" %} Overview</a>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div><h1>Attempt log</h1><p class="sub">Global authentication attempt history.</p></div>
+  </div>
+
+  <form method="get" class="card card-pad-sm fade-in-up" style="margin-bottom:18px;">
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label class="form-help" style="text-transform:uppercase;">Result</label>
+        <select name="result" style="padding:9px 12px; width:auto;">
+          <option value="">All</option>
+          <option value="success" {% if current_result == 'success' %}selected{% endif %}>Success</option>
+          <option value="failed" {% if current_result == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-help" style="text-transform:uppercase;">Student</label>
+        <input type="text" name="student" value="{{ current_student }}" placeholder="username" style="padding:9px 12px; width:auto;">
+      </div>
+      <div>
+        <label class="form-help" style="text-transform:uppercase;">Lab token</label>
+        <input type="text" name="lab" value="{{ current_lab }}" placeholder="token" style="padding:9px 12px; width:auto;">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">{% icon "filter" "icon" %} Filter</button>
+      <a href="{% url 'instructor:attempts' %}" class="btn btn-ghost btn-sm">Reset</a>
+    </div>
+  </form>
+
+  <div class="table-wrap fade-in-up d-1">
+    <table class="data">
+      <thead>
+        <tr><th>Time</th><th>Student</th><th>Lab</th><th>Attempt #</th><th>Username</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        {% for a in attempts %}
+          <tr>
+            <td class="faint mono">{{ a.created_at|date:"M d, H:i:s" }}</td>
+            <td>{{ a.lab.student.username }}</td>
+            <td class="mono">{{ a.lab.lab_token|slice:":10" }}…</td>
+            <td class="mono">{{ a.attempt_number }}</td>
+            <td class="mono">{{ a.username_attempted }}</td>
+            <td>{% if a.success %}<span class="badge badge-success">SUCCESS</span>{% else %}<span class="badge badge-failed">FAILED</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6"><div class="empty" style="padding:28px;"><div class="empty-ico">{% icon "inbox" "icon" %}</div><h3>No attempts match</h3><p>Try adjusting your filters.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <div class="row mt-2" style="justify-content:center;">
+      {% if page_obj.has_previous %}<a class="btn btn-ghost btn-sm" href="?page={{ page_obj.previous_page_number }}&result={{ current_result }}&student={{ current_student }}&lab={{ current_lab }}">← Prev</a>{% endif %}
+      <span class="faint mono">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="btn btn-ghost btn-sm" href="?page={{ page_obj.next_page_number }}&result={{ current_result }}&student={{ current_student }}&lab={{ current_lab }}">Next →</a>{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

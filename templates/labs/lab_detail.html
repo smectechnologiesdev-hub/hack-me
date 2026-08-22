@@ -1,0 +1,86 @@
+{% extends "base_app.html" %}
+{% load static icons %}
+{% block title %}Lab {{ lab.lab_token|slice:":8" }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Lab overview{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-outline" href="{% url 'labs:instructions' lab.lab_token %}">{% icon "book" "icon" %} Instructions</a>
+  <a class="btn btn-primary" href="{% url 'labs:monitor' lab.lab_token %}">{% icon "activity" "icon" %} Live monitor</a>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1 class="row" style="gap:12px;">Training lab {% include "labs/_status_badge.html" with status=lab.status %}</h1>
+      <p class="sub">{{ lab.wordlist.name }} · {{ lab.wordlist.get_difficulty_display }} difficulty</p>
+    </div>
+  </div>
+
+  <div class="notice fade-in-up" style="margin-bottom:20px;">
+    <span class="notice-icon">{% icon "shield" "icon" %}</span>
+    <div>
+      <h3>Training data only</h3>
+      <p>This exercise may only be performed against <strong>this</strong> assigned lab endpoint. These values are yours alone and are not real credentials.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="stat fade-in-up">
+      <div class="stat-top"><span class="stat-label">Status</span><span class="stat-ico">{% icon "target" "icon" %}</span></div>
+      <div class="stat-value" style="font-size:1.25rem;">{{ lab.status }}</div>
+    </div>
+    <div class="stat fade-in-up d-1">
+      <div class="stat-top"><span class="stat-label">Attempts used</span><span class="stat-ico c">{% icon "activity" "icon" %}</span></div>
+      <div class="stat-value">{{ lab.attempt_count }}<span class="faint" style="font-size:1rem;"> / {{ lab.max_attempts }}</span></div>
+      <div class="progress mt-1"><span style="width:{% widthratio lab.attempt_count lab.max_attempts 100 %}%"></span></div>
+    </div>
+    <div class="stat fade-in-up d-2">
+      <div class="stat-top"><span class="stat-label">Remaining</span><span class="stat-ico v">{% icon "zap" "icon" %}</span></div>
+      <div class="stat-value accent">{{ lab.attempts_remaining }}</div>
+    </div>
+    <div class="stat fade-in-up d-3">
+      <div class="stat-top"><span class="stat-label">Expires</span><span class="stat-ico">{% icon "clock" "icon" %}</span></div>
+      <div class="stat-value" style="font-size:1.25rem;">{{ lab.expires_at|date:"H:i" }}</div>
+      <div class="stat-sub">{{ lab.expires_at|date:"M d, Y" }}</div>
+    </div>
+  </div>
+
+  <div class="card mt-2 fade-in-up d-2">
+    <div class="card-title">Your lab credentials</div>
+
+    <div class="form-row">
+      <label>Training endpoint (POST)</label>
+      <div class="copy-field">
+        <code id="lab-url" data-copy>{{ request.scheme }}://{{ request.get_host }}{{ login_path }}</code>
+        <button type="button" data-copy-btn="lab-url">{% icon "copy" "icon" %} Copy</button>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="form-row">
+        <label>Assigned username</label>
+        <div class="copy-field">
+          <code id="lab-username" data-copy>{{ lab.username }}</code>
+          <button type="button" data-copy-btn="lab-username">{% icon "copy" "icon" %} Copy</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Lab token</label>
+        <div class="copy-field">
+          <code id="lab-token" data-copy>{{ lab.lab_token }}</code>
+          <button type="button" data-copy-btn="lab-token">{% icon "copy" "icon" %} Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="form-help">
+      The correct password is hidden by design — finding it by sending requests is the exercise.
+      Your wordlist and a ready-to-fill Python template are on the
+      <a href="{% url 'labs:instructions' lab.lab_token %}">instructions page</a>.
+    </p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/copy.js' %}"></script>
+{% endblock %}

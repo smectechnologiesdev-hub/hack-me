@@ -1,0 +1,2 @@
+{% comment %}Renders a status badge. Usage: {% include "labs/_status_badge.html" with status=lab.status %}{% endcomment %}
+<span class="badge badge-{{ status|lower }}">{{ status }}</span>

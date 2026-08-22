@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Vaultline — Private Banking, Secured{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="container hero" style="text-align:left; padding-bottom:24px;">
+  <div class="grid grid-2" style="align-items:center; gap:40px;">
+    <div>
+      <span class="hero-badge fade-in-up"><span class="dot"></span> Private client banking</span>
+      <h1 class="fade-in-up d-1" style="font-size:clamp(2.4rem,5.5vw,3.8rem);">Your wealth,<br><span class="gradient-text">secured</span>.</h1>
+      <p class="hero-lead fade-in-up d-2" style="margin-left:0;">
+        Vaultline is private banking built on bank-grade security. Hold multi-currency
+        accounts, move money in seconds, and manage your portfolio — all protected by
+        multi-layer encryption.
+      </p>
+      <div class="hero-actions fade-in-up d-3" style="justify-content:flex-start;">
+        <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}">Open an account {% icon "arrow-right" "icon" %}</a>
+        <a class="btn btn-outline btn-lg" href="{% url 'accounts:login' %}">Sign in</a>
+      </div>
+      <div class="row fade-in-up d-4" style="gap:22px; margin-top:26px;">
+        <span class="chip">{% icon "lock" "icon" %} 256-bit encryption</span>
+        <span class="chip">{% icon "shield" "icon" %} Fraud monitored 24/7</span>
+      </div>
+    </div>
+
+    <!-- Premium account card mockup -->
+    <div class="fade-in-up d-2">
+      <div class="card" style="background:linear-gradient(150deg, #0f2b24 0%, #0b1017 60%); border-color:var(--hairline-2); box-shadow:var(--shadow-lg);">
+        <div class="spread">
+          <div>
+            <div class="stat-label">Total balance</div>
+            <div class="mono" style="font-size:2.1rem; font-weight:700; letter-spacing:-.02em; margin-top:6px;">$128,940<span class="faint">.20</span></div>
+          </div>
+          <span class="chip" style="border-color:rgba(47,224,176,.3); color:var(--brand);">{% icon "activity" "icon" %} +2.4%</span>
+        </div>
+
+        <!-- mini bar chart -->
+        <div style="display:flex; align-items:flex-end; gap:6px; height:70px; margin:22px 0;">
+          <span style="flex:1; height:35%; background:var(--panel-3); border-radius:4px;"></span>
+          <span style="flex:1; height:52%; background:var(--panel-3); border-radius:4px;"></span>
+          <span style="flex:1; height:44%; background:var(--panel-3); border-radius:4px;"></span>
+          <span style="flex:1; height:68%; background:var(--brand-grad); border-radius:4px;"></span>
+          <span style="flex:1; height:60%; background:var(--panel-3); border-radius:4px;"></span>
+          <span style="flex:1; height:82%; background:var(--brand-grad); border-radius:4px;"></span>
+          <span style="flex:1; height:74%; background:var(--panel-3); border-radius:4px;"></span>
+          <span style="flex:1; height:96%; background:var(--brand-grad); border-radius:4px;"></span>
+        </div>
+
+        <div class="spread" style="border-top:1px solid var(--hairline); padding-top:16px;">
+          <div>
+            <div class="stat-label">Vaultline Private · USD</div>
+            <div class="mono faint" style="margin-top:4px;">•••• •••• •••• 4921</div>
+          </div>
+          <span class="badge badge-completed">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST STATS -->
+<section class="container" style="padding:20px 0 10px;">
+  <div class="grid grid-4">
+    <div class="stat"><div class="stat-label">Assets protected</div><div class="stat-value" style="font-size:1.5rem;">$4.2B</div></div>
+    <div class="stat"><div class="stat-label">Countries served</div><div class="stat-value" style="font-size:1.5rem;">180+</div></div>
+    <div class="stat"><div class="stat-label">Platform uptime</div><div class="stat-value accent" style="font-size:1.5rem;">99.99%</div></div>
+    <div class="stat"><div class="stat-label">Client support</div><div class="stat-value" style="font-size:1.5rem;">24/7</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section container" id="features">
+  <div class="section-head">
+    <span class="section-kicker">Everything you need</span>
+    <h2>One account. Total control.</h2>
+    <p>From everyday spending to long-term wealth, manage it all with the security you expect from a private bank.</p>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="feature fade-in-up">
+      <div class="feature-ico">{% icon "lock" "icon" %}</div>
+      <h3>Secure vault</h3>
+      <p>Keep balances across currencies in a vault protected by multi-layer encryption and hardware-backed keys.</p>
+    </div>
+    <div class="feature fade-in-up d-1">
+      <div class="feature-ico">{% icon "zap" "icon" %}</div>
+      <h3>Instant transfers</h3>
+      <p>Send and receive money globally in seconds, with transparent rates and no hidden fees.</p>
+    </div>
+    <div class="feature fade-in-up d-2">
+      <div class="feature-ico">{% icon "shield-check" "icon" %}</div>
+      <h3>Fraud protection</h3>
+      <p>Real-time monitoring flags unusual activity and locks threats out before they reach your money.</p>
+    </div>
+    <div class="feature fade-in-up">
+      <div class="feature-ico">{% icon "activity" "icon" %}</div>
+      <h3>Wealth insights</h3>
+      <p>Track spending, growth, and your full portfolio with clear, real-time analytics.</p>
+    </div>
+    <div class="feature fade-in-up d-1">
+      <div class="feature-ico">{% icon "layers" "icon" %}</div>
+      <h3>Global accounts</h3>
+      <p>Open accounts in multiple currencies and hold, convert, and spend wherever you are.</p>
+    </div>
+    <div class="feature fade-in-up d-2">
+      <div class="feature-ico">{% icon "users" "icon" %}</div>
+      <h3>Private advisors</h3>
+      <p>Every private client is paired with a dedicated advisor, available whenever you need them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY BAND -->
+<section class="section container">
+  <div class="grid grid-2" style="align-items:center; gap:40px;">
+    <div>
+      <span class="section-kicker">Security first</span>
+      <h2 style="font-size:clamp(1.8rem,3.5vw,2.4rem); margin:14px 0 12px;">Protected at every layer</h2>
+      <p class="subtle" style="font-size:1.05rem;">
+        Your account is defended by encryption in transit and at rest, continuous
+        monitoring, and strict access controls — the standards trusted by the world's
+        leading institutions.
+      </p>
+      <ul class="check mt-1">
+        <li>End-to-end 256-bit encryption</li>
+        <li>Continuous fraud &amp; anomaly detection</li>
+        <li>Hardware-backed key storage</li>
+        <li>Round-the-clock security operations</li>
+      </ul>
+    </div>
+    <div class="card" style="text-align:center; padding:44px;">
+      <div class="feature-ico" style="width:72px; height:72px; margin:0 auto 18px; border-radius:20px;">{% icon "shield" "icon" %}</div>
+      <div class="mono" style="font-size:1.3rem; font-weight:700;">Bank-grade security</div>
+      <p class="subtle mb-0" style="margin-top:8px;">Independently audited. Always monitored.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section container">
+  <div class="cta-band">
+    <h2>Open your Vaultline account</h2>
+    <p>Join private clients in 180+ countries. It only takes a minute.</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}">Get started {% icon "arrow-right" "icon" %}</a>
+  </div>
+</section>
+{% endblock %}

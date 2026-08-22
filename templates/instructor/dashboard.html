@@ -1,0 +1,76 @@
+{% extends "base_app.html" %}
+{% load icons %}
+{% block title %}Instructor · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Instructor overview{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-outline" href="{% url 'instructor:labs' %}">{% icon "list" "icon" %} Labs</a>
+  <a class="btn btn-outline" href="{% url 'instructor:attempts' %}">{% icon "activity" "icon" %} Attempts</a>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>Platform overview</h1>
+      <p class="sub">Aggregate activity across all students and labs.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="stat fade-in-up">
+      <div class="stat-top"><span class="stat-label">Students</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div>
+      <div class="stat-value">{{ overview.total_students }}</div>
+    </div>
+    <div class="stat fade-in-up d-1">
+      <div class="stat-top"><span class="stat-label">Active labs</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div>
+      <div class="stat-value accent">{{ overview.active_labs }}</div>
+    </div>
+    <div class="stat fade-in-up d-2">
+      <div class="stat-top"><span class="stat-label">Completed labs</span><span class="stat-ico v">{% icon "check-circle" "icon" %}</span></div>
+      <div class="stat-value">{{ overview.completed_labs }}</div>
+    </div>
+    <div class="stat fade-in-up d-3">
+      <div class="stat-top"><span class="stat-label">Total attempts</span><span class="stat-ico c">{% icon "activity" "icon" %}</span></div>
+      <div class="stat-value">{{ overview.total_attempts }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2 mt-2">
+    <div class="stat fade-in-up">
+      <div class="stat-top"><span class="stat-label">Total labs</span><span class="stat-ico">{% icon "layers" "icon" %}</span></div>
+      <div class="stat-value">{{ overview.total_labs }}</div>
+    </div>
+    <div class="stat fade-in-up d-1">
+      <div class="stat-top"><span class="stat-label">Success rate</span><span class="stat-ico">{% icon "gauge" "icon" %}</span></div>
+      <div class="stat-value accent">{{ overview.success_rate }}%</div>
+      <div class="progress mt-1"><span style="width:{{ overview.success_rate }}%"></span></div>
+    </div>
+  </div>
+
+  <div class="card mt-2 fade-in-up d-2">
+    <div class="spread" style="margin-bottom:16px;">
+      <div class="card-title" style="margin:0;">Recent activity</div>
+      <a href="{% url 'instructor:attempts' %}" class="chip">View all {% icon "chevron-right" "icon" %}</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Student</th><th>Lab</th><th>Attempt #</th><th>Result</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody>
+          {% for a in recent_attempts %}
+            <tr>
+              <td>{{ a.lab.student.username }}</td>
+              <td class="mono">{{ a.lab.lab_token|slice:":10" }}…</td>
+              <td class="mono">{{ a.attempt_number }}</td>
+              <td>{% if a.success %}<span class="badge badge-success">SUCCESS</span>{% else %}<span class="badge badge-failed">FAILED</span>{% endif %}</td>
+              <td class="faint mono">{{ a.created_at|date:"M d, H:i:s" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty" style="padding:28px;"><div class="empty-ico">{% icon "inbox" "icon" %}</div><h3>No attempts yet</h3><p>Activity will appear here as students run their scripts.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
