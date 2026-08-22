@@ -66,3 +66,65 @@ class InstructorAccessTests(TestCase):
             "halfprof", password="pw-1", role=User.Role.INSTRUCTOR, is_staff=False
         )
         self.assertFalse(u.is_instructor)
+
+
+class PortalLoginTests(TestCase):
+    """The single /login/ endpoint serves the browser form AND the script."""
+
+    def setUp(self):
+        # A real, crackable target account.
+        self.user = User.objects.create_user("m.kessler", password="hello123")
+
+    def test_get_renders_login_form(self):
+        resp = self.client.get("/login/")
+        self.assertEqual(resp.status_code, 200)
+
+    # --- Browser form (Accept: text/html) -----------------------------------
+    def test_browser_success_redirects_to_dashboard(self):
+        resp = self.client.post(
+            "/login/",
+            {"username": "m.kessler", "password": "hello123"},
+            HTTP_ACCEPT="text/html",
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/dashboard/", resp["Location"])
+
+    def test_browser_failure_rerenders_form(self):
+        resp = self.client.post(
+            "/login/",
+            {"username": "m.kessler", "password": "wrong"},
+            HTTP_ACCEPT="text/html",
+        )
+        self.assertEqual(resp.status_code, 200)  # form re-rendered, not redirect
+
+    # --- Script (Accept: */*, like the requests library) --------------------
+    def test_script_success_returns_json(self):
+        resp = self.client.post(
+            "/login/",
+            {"username": "m.kessler", "password": "hello123"},
+            HTTP_ACCEPT="*/*",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["success"])
+
+    def test_script_failure_returns_401(self):
+        resp = self.client.post(
+            "/login/",
+            {"username": "m.kessler", "password": "nope"},
+            HTTP_ACCEPT="*/*",
+        )
+        self.assertEqual(resp.status_code, 401)
+        self.assertFalse(resp.json()["success"])
+
+    def test_endpoint_is_csrf_exempt(self):
+        # A CSRF-enforcing client with no token must still be allowed.
+        from django.test import Client
+
+        csrf_client = Client(enforce_csrf_checks=True)
+        resp = csrf_client.post(
+            "/login/",
+            {"username": "m.kessler", "password": "hello123"},
+            HTTP_ACCEPT="*/*",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["success"])

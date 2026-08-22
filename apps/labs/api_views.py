@@ -13,7 +13,6 @@ The login endpoint is the intentionally "vulnerable" training target; all other
 endpoints are ordinary authenticated reads.
 """
 
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -33,7 +32,7 @@ from .serializers import (
     TrainingLoginSerializer,
     WordlistSerializer,
 )
-from .services import create_lab_for_student, get_primary_lab, refresh_lab_status
+from .services import create_lab_for_student, refresh_lab_status
 
 
 class LabStartView(APIView):
@@ -156,68 +155,4 @@ class LabLoginView(APIView):
         http_status = self._STATUS_BY_OUTCOME.get(
             result.outcome, status.HTTP_400_BAD_REQUEST
         )
-        return Response(body, status=http_status)
-
-
-# ===========================================================================
-# Tokenless public API — the single, "normal" attack surface.
-#
-# There is one global target account (the primary lab).  Students hit these
-# fixed endpoints with no token and no login:
-#   GET  /api/target/       -> {"username": ...}   the account to attack
-#   GET  /api/wordlist.txt  -> the candidate password list, one per line
-#   POST /api/login/        -> {"username","password"} attack the account
-# ===========================================================================
-class _PublicMixin:
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    throttle_classes = []  # freely attackable
-
-
-class PublicTargetView(_PublicMixin, APIView):
-    """GET /api/target/ — the username of the account students must break into."""
-
-    def get(self, request):
-        lab = get_primary_lab()
-        if lab is None:
-            return Response({"detail": "No target configured."}, status=503)
-        return Response({"username": lab.username})
-
-
-class PublicWordlistView(_PublicMixin, APIView):
-    """GET /api/wordlist.txt — the candidate password list (one per line)."""
-
-    def get(self, request):
-        lab = get_primary_lab()
-        passwords = []
-        if lab is not None:
-            passwords = [p for p in (lab.wordlist.passwords or []) if isinstance(p, str)]
-        body = "\n".join(passwords) + ("\n" if passwords else "")
-        return HttpResponse(body, content_type="text/plain; charset=utf-8")
-
-
-class PublicLoginView(_PublicMixin, APIView):
-    """POST /api/login/ — the tokenless training login (the attack target)."""
-
-    def post(self, request):
-        lab = get_primary_lab()
-        if lab is None:
-            return Response(
-                {"success": False, "message": "No target configured."}, status=503
-            )
-        in_serializer = TrainingLoginSerializer(data=request.data)
-        in_serializer.is_valid(raise_exception=True)
-        result = process_login_attempt(
-            lab_token=lab.lab_token,
-            username=in_serializer.validated_data["username"],
-            password=in_serializer.validated_data["password"],
-            request=request,
-            public_mode=True,
-        )
-        body = {
-            "success": result.success,
-            "message": result.message,
-            "attempt_number": result.attempt_number,
-        }
-        http_status = status.HTTP_200_OK if result.success else status.HTTP_401_UNAUTHORIZED
         return Response(body, status=http_status)

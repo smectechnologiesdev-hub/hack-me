@@ -1,19 +1,17 @@
 /* ==========================================================================
-   Celebration: fires when the student cracks the password.
-   Triggered live via the "lab:success" event (from monitor.js), or immediately
-   on load if the challenge is already completed. Confetti is drawn on a canvas
-   with no external libraries.
+   Celebration: fires once, right after a successful sign-in (ACCESS GRANTED).
+   Triggered by data-just-accessed="1" on #vault-root. Confetti is drawn on a
+   canvas with no external libraries.
    ========================================================================== */
 (function () {
   var overlay = document.getElementById("win-overlay");
-  if (!overlay) return;
+  var root = document.getElementById("vault-root");
+  if (!overlay || !root) return;
+  if (root.getAttribute("data-just-accessed") !== "1") return;
 
   var canvas = document.getElementById("confetti");
   var ctx = canvas ? canvas.getContext("2d") : null;
-  var pwEl = document.getElementById("win-password");
-  var atEl = document.getElementById("win-attempts");
   var closeBtn = document.getElementById("win-close");
-  var root = document.getElementById("monitor-root");
 
   var COLORS = ["#2fe0b0", "#38bdf8", "#7c6cff", "#f5b73d", "#ff6472", "#ffffff"];
   var pieces = [];
@@ -54,11 +52,8 @@
       ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.5);
       ctx.restore();
     }
-    // Drop pieces that fell off-screen.
     pieces = pieces.filter(function (p) { return p.y < canvas.height + 40; });
-    if (running || pieces.length) {
-      rafId = requestAnimationFrame(tick);
-    }
+    if (running || pieces.length) rafId = requestAnimationFrame(tick);
   }
 
   function startConfetti() {
@@ -66,7 +61,6 @@
     resize();
     running = true;
     spawn(160);
-    // A couple of extra bursts for effect.
     setTimeout(function () { spawn(80); }, 400);
     setTimeout(function () { spawn(60); }, 900);
     setTimeout(function () { running = false; }, 2600);
@@ -74,39 +68,22 @@
     tick();
   }
 
-  var shown = false;
-  function showWin(password, attempts) {
-    if (shown) return;
-    shown = true;
-    if (pwEl && password) pwEl.textContent = password;
-    if (atEl && attempts != null) atEl.textContent = attempts;
+  function show() {
     overlay.hidden = false;
-    // force reflow then add class for CSS transition
     void overlay.offsetWidth;
     overlay.classList.add("show");
     startConfetti();
   }
 
-  function hideWin() {
+  function hide() {
     overlay.classList.remove("show");
     running = false;
     setTimeout(function () { overlay.hidden = true; }, 250);
   }
 
   window.addEventListener("resize", resize);
-  if (closeBtn) closeBtn.addEventListener("click", hideWin);
-  overlay.addEventListener("click", function (e) {
-    if (e.target === overlay) hideWin();
-  });
+  if (closeBtn) closeBtn.addEventListener("click", hide);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) hide(); });
 
-  // Live trigger from the WebSocket stream.
-  window.addEventListener("lab:success", function (e) {
-    var d = e.detail || {};
-    showWin(d.cracked_password, d.attempt_number);
-  });
-
-  // Already completed when the page loaded? Celebrate right away.
-  if (root && root.getAttribute("data-completed") === "1") {
-    showWin(root.getAttribute("data-cracked"), root.getAttribute("data-attempts"));
-  }
+  show();
 })();

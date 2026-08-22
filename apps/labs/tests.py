@@ -247,64 +247,6 @@ class WordlistDownloadTests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
-class PublicApiTests(TestCase):
-    """The tokenless /api/ endpoints need NO token and NO login."""
-
-    def setUp(self):
-        from apps.labs.services import set_primary_lab
-
-        self.wordlist = make_wordlist(passwords=["alpha", "beta", "hello123"])
-        self.host = User.objects.create_user("lab_host", password="x-unused-123")
-        self.lab = create_lab_for_student(self.host)
-        # Fix a known target password on the global target.
-        self.lab.set_target_password("hello123")
-        self.lab.save(update_fields=["target_password_hash"])
-        set_primary_lab(self.lab)
-        self.api = APIClient()  # anonymous — proves no login is needed
-
-    def test_target_endpoint_returns_username(self):
-        resp = self.api.get("/api/target/")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["username"], self.lab.username)
-
-    def test_wordlist_endpoint_is_plaintext(self):
-        resp = self.api.get("/api/wordlist.txt")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp["Content-Type"], "text/plain; charset=utf-8")
-        self.assertEqual(
-            resp.content.decode().strip().splitlines(), ["alpha", "beta", "hello123"]
-        )
-
-    def test_login_wrong_then_right(self):
-        fail = self.api.post(
-            "/api/login/", {"username": self.lab.username, "password": "nope"}, format="json"
-        )
-        self.assertEqual(fail.status_code, 401)
-        ok = self.api.post(
-            "/api/login/", {"username": self.lab.username, "password": "hello123"}, format="json"
-        )
-        self.assertEqual(ok.status_code, 200)
-        self.assertTrue(ok.json()["success"])
-
-    def test_wrong_username_is_rejected(self):
-        resp = self.api.post(
-            "/api/login/", {"username": "someone.else", "password": "hello123"}, format="json"
-        )
-        self.assertEqual(resp.status_code, 401)
-
-    def test_target_stays_crackable_after_success(self):
-        # public_mode never completes the lab, so it stays attackable.
-        for _ in range(3):
-            r = self.api.post(
-                "/api/login/",
-                {"username": self.lab.username, "password": "hello123"},
-                format="json",
-            )
-            self.assertEqual(r.status_code, 200)
-        self.lab.refresh_from_db()
-        self.assertNotEqual(self.lab.status, Lab.Status.COMPLETED)
-
-
 class ApiLoginEndpointTests(TestCase):
     def setUp(self):
         self.wordlist = make_wordlist(passwords=["onlypass"])

@@ -1,73 +1,40 @@
 """
 Dashboard views.
 
-* ``DashboardHomeView`` — the student landing area after login: a summary of
-  their own labs.
-* Instructor views — aggregate statistics and recent activity across ALL labs,
-  gated behind ``is_staff`` (never accessible to students).
+* ``DashboardHomeView`` — the single post-login landing page: the account
+  "vault".  When you've just signed in (including with cracked credentials), it
+  celebrates: ACCESS GRANTED.
+* Instructor views — aggregate views over the legacy lab data, gated behind
+  ``is_staff``.
 """
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count, Q
-from django.shortcuts import redirect
-from django.urls import reverse
 from django.utils import timezone
-from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from apps.attempts.models import Attempt
 from apps.labs.models import Lab
-from apps.labs.services import (
-    create_lab_for_student,
-    get_or_create_primary_lab,
-    set_primary_lab,
-)
 
 User = get_user_model()
 
 
 class DashboardHomeView(LoginRequiredMixin, TemplateView):
-    """/dashboard/ — the single post-login landing page: your current challenge.
-
-    Shows one focused challenge (auto-created on first login).  The student runs
-    their script against it and, the moment it's cracked, the page celebrates —
-    revealing the password and how many attempts it took.
-    """
+    """/dashboard/ — the account vault shown after signing in."""
 
     template_name = "dashboard/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Everyone attacks the same global target via the tokenless endpoint.
-        lab = get_or_create_primary_lab()
-        context["lab"] = lab
-        context["wordlist"] = lab.wordlist
-        # The fixed, tokenless endpoints the student's script uses.
-        context["login_endpoint"] = self.request.build_absolute_uri("/api/login/")
-        context["target_endpoint"] = self.request.build_absolute_uri("/api/target/")
-        context["wordlist_endpoint"] = self.request.build_absolute_uri("/api/wordlist.txt")
+        # Fire the celebration once, right after a successful sign-in.
+        context["just_accessed"] = self.request.session.pop("just_accessed", False)
         context["is_instructor"] = self.request.user.is_staff
         return context
 
 
-class NewChallengeView(LoginRequiredMixin, View):
-    """POST /dashboard/new/ — (staff) rotate the global target account."""
-
-    def post(self, request):
-        if request.user.is_staff:
-            lab = create_lab_for_student(request.user)
-            set_primary_lab(lab)
-        return redirect("dashboard:home")
-
-
 class InstructorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Restrict a view to staff/instructor accounts only.
-
-    Students failing the test get a 403 (raise_exception=True) rather than a
-    redirect loop.
-    """
+    """Restrict a view to staff/instructor accounts only."""
 
     raise_exception = True
 
@@ -92,22 +59,15 @@ class InstructorDashboardView(InstructorRequiredMixin, TemplateView):
         )
 
         context["overview"] = {
-            "total_students": User.objects.filter(
-                role=User.Role.STUDENT
-            ).count(),
+            "total_students": User.objects.filter(role=User.Role.STUDENT).count(),
             "active_labs": Lab.objects.filter(status=Lab.Status.ACTIVE).count(),
-            "completed_labs": Lab.objects.filter(
-                status=Lab.Status.COMPLETED
-            ).count(),
+            "completed_labs": Lab.objects.filter(status=Lab.Status.COMPLETED).count(),
             "total_labs": Lab.objects.count(),
             "total_attempts": total_attempts,
             "success_rate": success_rate,
         }
-
-        # Recent activity feed (latest attempts across all labs).
         context["recent_attempts"] = (
-            Attempt.objects.select_related("lab", "lab__student")
-            .order_by("-created_at")[:25]
+            Attempt.objects.select_related("lab", "lab__student").order_by("-created_at")[:25]
         )
         context["now"] = timezone.now()
         return context
@@ -123,14 +83,9 @@ class InstructorLabListView(InstructorRequiredMixin, ListView):
     def get_queryset(self):
         qs = (
             Lab.objects.select_related("student", "wordlist")
-            .annotate(
-                success_count=Count(
-                    "attempts", filter=Q(attempts__success=True)
-                )
-            )
+            .annotate(success_count=Count("attempts", filter=Q(attempts__success=True)))
             .order_by("-started_at")
         )
-        # Optional filters.
         status = self.request.GET.get("status")
         if status in dict(Lab.Status.choices):
             qs = qs.filter(status=status)
@@ -155,9 +110,7 @@ class InstructorAttemptListView(InstructorRequiredMixin, ListView):
     paginate_by = 100
 
     def get_queryset(self):
-        qs = Attempt.objects.select_related("lab", "lab__student").order_by(
-            "-created_at"
-        )
+        qs = Attempt.objects.select_related("lab", "lab__student").order_by("-created_at")
         result = self.request.GET.get("result")
         if result == "success":
             qs = qs.filter(success=True)

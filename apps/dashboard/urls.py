@@ -1,4 +1,4 @@
-"""Student dashboard routes (mounted at /dashboard/)."""
+"""Dashboard route (mounted at /dashboard/)."""
 
 from django.urls import path
 
@@ -8,5 +8,4 @@ app_name = "dashboard"
 
 urlpatterns = [
     path("", views.DashboardHomeView.as_view(), name="home"),
-    path("new/", views.NewChallengeView.as_view(), name="new"),
 ]
