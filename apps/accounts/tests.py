@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.accounts.models import OtpChallenge
+
 User = get_user_model()
 
 
@@ -131,7 +133,11 @@ class PortalLoginTests(TestCase):
 
 
 class OtpLoginTests(TestCase):
-    """The separate 'Sign in with OTP' flow: request a hidden code, then verify."""
+    """The 'Sign in with OTP' flow: request a hidden code, then brute-force it.
+
+    The code is keyed by username (not the session), so verification is stateless:
+    the caller just posts ``{username, otp}`` — no cookie needed.
+    """
 
     def setUp(self):
         self.user = User.objects.create_user("otp.user", password="whatever-123")
@@ -140,18 +146,19 @@ class OtpLoginTests(TestCase):
         )
 
     def _request_code(self, username="otp.user"):
-        resp = self.client.post(
+        return self.client.post(
             "/login/otp/request/", {"username": username}, HTTP_ACCEPT="*/*"
         )
-        return resp
+
+    def _stored_code(self, username="otp.user"):
+        return OtpChallenge.objects.get(username=username).code
 
     # --- request step -------------------------------------------------------
-    def test_request_mints_hidden_code_in_session(self):
+    def test_request_mints_hidden_code(self):
         resp = self._request_code()
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["success"])
-        code = self.client.session.get("otp_code")
-        self.assertIsNotNone(code)
+        code = self._stored_code()
         self.assertRegex(code, r"^\d{4}$")
         # The code must NEVER appear in the response body.
         self.assertNotIn(code, resp.content.decode())
@@ -160,42 +167,77 @@ class OtpLoginTests(TestCase):
         resp = self._request_code(username="ghost")
         self.assertEqual(resp.status_code, 200)          # same generic answer
         self.assertTrue(resp.json()["success"])
-        self.assertIsNone(self.client.session.get("otp_code"))  # but no code minted
+        self.assertFalse(OtpChallenge.objects.filter(username="ghost").exists())
 
     def test_request_refuses_staff_account(self):
         self._request_code(username="boss")
-        self.assertIsNone(self.client.session.get("otp_code"))
+        self.assertFalse(OtpChallenge.objects.filter(username="boss").exists())
 
-    # --- verify step --------------------------------------------------------
+    # --- verify step (stateless: post {username, otp}) ----------------------
     def test_verify_correct_code_logs_in(self):
         self._request_code()
-        code = self.client.session["otp_code"]
-        resp = self.client.post("/login/otp/verify/", {"otp": code}, HTTP_ACCEPT="*/*")
+        code = self._stored_code()
+        resp = self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
+        )
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["success"])
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.user.pk)
 
     def test_verify_wrong_code_is_401(self):
         self._request_code()
-        good = self.client.session["otp_code"]
+        good = self._stored_code()
         bad = "0000" if good != "0000" else "1111"
-        resp = self.client.post("/login/otp/verify/", {"otp": bad}, HTTP_ACCEPT="*/*")
+        resp = self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": bad},
+            HTTP_ACCEPT="*/*",
+        )
         self.assertEqual(resp.status_code, 401)
         self.assertFalse(resp.json()["success"])
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_verify_without_request_is_401(self):
-        resp = self.client.post("/login/otp/verify/", {"otp": "1234"}, HTTP_ACCEPT="*/*")
+        resp = self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": "1234"},
+            HTTP_ACCEPT="*/*",
+        )
         self.assertEqual(resp.status_code, 401)
+
+    def test_stateless_verify_needs_no_session_cookie(self):
+        # Mint a code with one client, verify with a brand-new client (no shared
+        # cookies) — proves the code is bound to the username, not the session.
+        from django.test import Client
+
+        self._request_code()
+        code = self._stored_code()
+        fresh = Client()
+        resp = fresh.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["success"])
 
     def test_code_is_single_use(self):
         self._request_code()
-        code = self.client.session["otp_code"]
-        self.client.post("/login/otp/verify/", {"otp": code}, HTTP_ACCEPT="*/*")
-        # Session code consumed; replaying the same code now fails.
-        self.assertIsNone(self.client.session.get("otp_code"))
+        code = self._stored_code()
+        self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
+        )
+        self.assertFalse(OtpChallenge.objects.filter(username="otp.user").exists())
         self.client.logout()
-        resp = self.client.post("/login/otp/verify/", {"otp": code}, HTTP_ACCEPT="*/*")
+        resp = self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
+        )
         self.assertEqual(resp.status_code, 401)
 
     def test_expired_code_is_rejected(self):
@@ -204,14 +246,16 @@ class OtpLoginTests(TestCase):
         from django.utils import timezone
 
         self._request_code()
-        code = self.client.session["otp_code"]
-        # Backdate the issue time beyond the TTL.
-        session = self.client.session
-        session["otp_issued_at"] = (
-            timezone.now() - timedelta(seconds=6000)
-        ).isoformat()
-        session.save()
-        resp = self.client.post("/login/otp/verify/", {"otp": code}, HTTP_ACCEPT="*/*")
+        code = self._stored_code()
+        # Backdate beyond the TTL via .update() so auto_now doesn't reset it.
+        OtpChallenge.objects.filter(username="otp.user").update(
+            issued_at=timezone.now() - timedelta(seconds=6000)
+        )
+        resp = self.client.post(
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
+        )
         self.assertEqual(resp.status_code, 401)
 
     def test_otp_endpoints_are_csrf_exempt(self):
@@ -222,9 +266,11 @@ class OtpLoginTests(TestCase):
             "/login/otp/request/", {"username": "otp.user"}, HTTP_ACCEPT="*/*"
         )
         self.assertEqual(r1.status_code, 200)
-        code = csrf_client.session["otp_code"]
+        code = self._stored_code()
         r2 = csrf_client.post(
-            "/login/otp/verify/", {"otp": code}, HTTP_ACCEPT="*/*"
+            "/login/otp/verify/",
+            {"username": "otp.user", "otp": code},
+            HTTP_ACCEPT="*/*",
         )
         self.assertEqual(r2.status_code, 200)
         self.assertTrue(r2.json()["success"])

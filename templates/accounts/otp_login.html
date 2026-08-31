@@ -10,9 +10,10 @@
   {% endif %}
 
   {% if otp_stage == "verify" %}
-    <p class="subtle">A 4-digit code has been generated for this session. Enter it to continue.</p>
+    <p class="subtle">A 4-digit code has been generated for <strong>{{ otp_username }}</strong>. Enter it to continue.</p>
 
     <form method="post" action="{% url 'accounts:otp_verify' %}" novalidate style="margin-top:20px;">
+      <input type="hidden" name="username" value="{{ otp_username }}">
       <div class="form-row">
         <label for="id_otp">One-time code</label>
         <input id="id_otp" name="otp" inputmode="numeric" autocomplete="one-time-code"
@@ -23,7 +24,7 @@
     </form>
 
     <form method="post" action="{% url 'accounts:otp_request' %}" style="margin-top:12px;">
-      <input type="hidden" name="username" value="{{ request.session.otp_username }}">
+      <input type="hidden" name="username" value="{{ otp_username }}">
       <button type="submit" class="btn btn-block" style="justify-content:center;">Generate a new code</button>
     </form>
   {% else %}

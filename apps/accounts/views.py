@@ -6,22 +6,22 @@ a basic script needs no token, and it answers with a redirect for browsers or
 plain JSON for scripts.
 
 The OTP views add a second, separate exercise: "Sign in with OTP".  Requesting a
-code mints a hidden 4-digit number bound to the caller's **session** (never
-returned anywhere); verifying exchanges the correct code for a login.  Because
-the code lives in the session, a script must reuse its session cookie across the
-request/verify calls — that is the whole point of the drill.
+code mints a hidden 4-digit number for a **username** (stored server-side, never
+returned); verifying exchanges the correct code for a login.  The code is keyed
+by username — not by the session — so a plain, stateless script can request a
+code and then brute-force ``{username, otp}`` without carrying any cookie.
 """
 
 import json
 import secrets
-from datetime import datetime
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.views import LogoutView
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -29,16 +29,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView
 
 from .forms import StudentRegistrationForm, StyledAuthenticationForm
+from .models import OtpChallenge
 
 # How long a minted OTP stays valid, in seconds.  Generous on purpose: a
 # single-threaded script may walk all 10 000 codes over the network before it
 # lands the right one, and we don't want the code to expire mid-exercise.
 OTP_TTL_SECONDS = getattr(settings, "OTP_TTL_SECONDS", 1800)
-
-# Session keys holding the pending code.
-_OTP_CODE = "otp_code"
-_OTP_USER = "otp_username"
-_OTP_AT = "otp_issued_at"
 
 
 class RegisterView(CreateView):
@@ -135,20 +131,24 @@ def _generate_otp() -> str:
     return f"{secrets.randbelow(10000):04d}"
 
 
-def _clear_otp(session) -> None:
-    for key in (_OTP_CODE, _OTP_USER, _OTP_AT):
-        session.pop(key, None)
+def _otp_target(username: str):
+    """Return the user OTP login is allowed for, or ``None``.
 
-
-def _otp_pending(session) -> bool:
-    return bool(session.get(_OTP_CODE) and session.get(_OTP_USER))
+    A 4-digit code is trivially brute-forced, so OTP login must never expose a
+    staff/superuser account.
+    """
+    User = get_user_model()
+    user = User.objects.filter(username=username, is_active=True).first()
+    if user and not (user.is_staff or user.is_superuser):
+        return user
+    return None
 
 
 class OtpLoginPageView(View):
     """Browser page for OTP sign-in.
 
-    Shows the *username* step until a code has been requested for this session,
-    then the *code-entry* step.
+    Stage is driven by the ``u`` query param (the username a code was requested
+    for) rather than the session, so nothing here depends on a cookie.
     """
 
     template_name = "accounts/otp_login.html"
@@ -156,66 +156,59 @@ class OtpLoginPageView(View):
     def get(self, request):
         if request.user.is_authenticated:
             return redirect("dashboard:home")
-        stage = "verify" if _otp_pending(request.session) else "request"
-        return render(request, self.template_name, {"otp_stage": stage})
+        username = (request.GET.get("u") or "").strip()
+        stage = "verify" if username else "request"
+        return render(
+            request, self.template_name, {"otp_stage": stage, "otp_username": username}
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class OtpRequestView(View):
-    """Step 1: mint a hidden 4-digit OTP bound to this session.
+    """Step 1: mint a hidden 4-digit OTP for a username.
 
-    The code is stored server-side in the session and is **never** included in
-    any response.  We answer identically whether or not the username exists, so
-    the endpoint does not leak which accounts are real.
+    The code is stored server-side (one per username) and is **never** included
+    in any response.  We answer identically whether or not the username exists,
+    so the endpoint does not leak which accounts are real.
     """
 
     def post(self, request):
         data = _request_data(request)
         username = (data.get("username") or "").strip()
 
-        User = get_user_model()
-        user = User.objects.filter(username=username, is_active=True).first()
+        user = _otp_target(username)
+        if user is not None:
+            OtpChallenge.objects.update_or_create(
+                username=user.username, defaults={"code": _generate_otp()}
+            )
 
-        # Only mint a code for a real, non-privileged account — a 4-digit code is
-        # trivially brute-forced, so OTP login must never expose staff/superusers.
-        if user and not (user.is_staff or user.is_superuser):
-            request.session[_OTP_USER] = user.username
-            request.session[_OTP_CODE] = _generate_otp()
-            request.session[_OTP_AT] = timezone.now().isoformat()
-            request.session.modified = True
-        else:
-            # Drop any stale code so a new (wrong) username can't ride a previous one.
-            _clear_otp(request.session)
-
-        message = "A 4-digit code has been generated for this session. Enter it to sign in."
+        message = "A 4-digit code has been generated. Enter it to sign in."
         if _wants_json(request):
             return JsonResponse({"success": True, "message": message})
-        return redirect("accounts:otp_login")
+        return redirect(f"{reverse('accounts:otp_login')}?{urlencode({'u': username})}")
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class OtpVerifyView(View):
-    """Step 2: exchange the correct session OTP for a login.
+    """Step 2: exchange the correct OTP for ``username`` for a login.
 
-    Reads (never writes) the session on a miss, so a multi-threaded guessing
-    script sees no write contention.  There is intentionally no attempt cap —
-    guessing the code is the exercise — but the code still expires after
-    ``OTP_TTL_SECONDS`` and is single-use on success.
+    Stateless: the caller sends ``{username, otp}``; no session cookie needed.
+    There is intentionally no attempt cap — guessing the code is the exercise —
+    but the code still expires after ``OTP_TTL_SECONDS`` and is single-use.
     """
 
     def post(self, request):
         data = _request_data(request)
+        username = (data.get("username") or "").strip()
         code = (data.get("otp") or data.get("code") or "").strip()
 
-        stored = request.session.get(_OTP_CODE)
-        username = request.session.get(_OTP_USER)
-        issued_at = request.session.get(_OTP_AT)
-
-        if self._code_matches(code, stored, issued_at):
-            User = get_user_model()
-            user = User.objects.filter(username=username, is_active=True).first()
+        challenge = (
+            OtpChallenge.objects.filter(username=username).first() if username else None
+        )
+        if challenge and self._code_matches(code, challenge):
+            user = _otp_target(username)
             if user is not None:
-                _clear_otp(request.session)  # consume: a code works only once
+                challenge.delete()  # consume: a code works only once
                 login(request, user, backend="django.contrib.auth.backends.ModelBackend")
                 request.session["just_accessed"] = True
                 if _wants_json(request):
@@ -229,25 +222,27 @@ class OtpVerifyView(View):
             return JsonResponse(
                 {"success": False, "message": "Invalid or expired code"}, status=401
             )
-        stage = "verify" if _otp_pending(request.session) else "request"
         return render(
             request,
             "accounts/otp_login.html",
-            {"otp_stage": stage, "otp_error": "Invalid or expired code."},
+            {
+                "otp_stage": "verify",
+                "otp_username": username,
+                "otp_error": "Invalid or expired code.",
+            },
         )
 
     @staticmethod
-    def _code_matches(code: str, stored: str, issued_at: str) -> bool:
-        if not (code and stored and issued_at):
+    def _code_matches(code: str, challenge: OtpChallenge) -> bool:
+        if not (code and challenge.code):
             return False
-        try:
-            age = (timezone.now() - datetime.fromisoformat(issued_at)).total_seconds()
-        except ValueError:
-            return False
+        age = (timezone.now() - challenge.issued_at).total_seconds()
         if age > OTP_TTL_SECONDS:
             return False
         # Length-check first so compare_digest doesn't raise on mismatched sizes.
-        return len(code) == len(stored) and secrets.compare_digest(code, stored)
+        return len(code) == len(challenge.code) and secrets.compare_digest(
+            code, challenge.code
+        )
 
 
 class LabLogoutView(LogoutView):

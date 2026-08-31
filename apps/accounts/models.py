@@ -41,3 +41,19 @@ class User(AbstractUser):
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return self.get_username()
+
+
+class OtpChallenge(models.Model):
+    """A pending one-time code for username-targeted OTP sign-in.
+
+    Kept server-side and NEVER returned.  Keyed by username (one active code per
+    user, replaced on each request) so a plain, stateless script can request a
+    code and then brute-force it without carrying any session cookie.
+    """
+
+    username = models.CharField(max_length=150, unique=True)
+    code = models.CharField(max_length=4)
+    issued_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        return f"OTP challenge for {self.username}"
