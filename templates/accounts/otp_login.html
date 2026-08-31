@@ -1,0 +1,42 @@
+{% extends "base_auth.html" %}
+{% load icons %}
+{% block title %}Sign in with OTP · {{ SITE_NAME }}{% endblock %}
+
+{% block auth_body %}
+  <h2 class="mt-0" style="font-size:1.6rem;">Sign in with OTP</h2>
+
+  {% if otp_error %}
+    <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ otp_error }}</span></div>
+  {% endif %}
+
+  {% if otp_stage == "verify" %}
+    <p class="subtle">A 4-digit code has been generated for this session. Enter it to continue.</p>
+
+    <form method="post" action="{% url 'accounts:otp_verify' %}" novalidate style="margin-top:20px;">
+      <div class="form-row">
+        <label for="id_otp">One-time code</label>
+        <input id="id_otp" name="otp" inputmode="numeric" autocomplete="one-time-code"
+               maxlength="4" pattern="[0-9]{4}" placeholder="••••" autofocus
+               style="letter-spacing:.4em; text-align:center; font-family:'JetBrains Mono',monospace;">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Verify &amp; sign in {% icon "arrow-right" "icon" %}</button>
+    </form>
+
+    <form method="post" action="{% url 'accounts:otp_request' %}" style="margin-top:12px;">
+      <input type="hidden" name="username" value="{{ request.session.otp_username }}">
+      <button type="submit" class="btn btn-block" style="justify-content:center;">Generate a new code</button>
+    </form>
+  {% else %}
+    <p class="subtle">Enter your username and we'll generate a one-time code for this session.</p>
+
+    <form method="post" action="{% url 'accounts:otp_request' %}" novalidate style="margin-top:20px;">
+      <div class="form-row">
+        <label for="id_username">Username</label>
+        <input id="id_username" name="username" autocomplete="username" autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Send code {% icon "key" "icon" %}</button>
+    </form>
+  {% endif %}
+
+  <p class="form-foot"><a href="{% url 'accounts:login' %}">Back to password sign-in</a></p>
+{% endblock %}

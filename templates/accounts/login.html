@@ -26,5 +26,11 @@
     <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in {% icon "arrow-right" "icon" %}</button>
   </form>
 
+  <div class="form-row" style="margin-top:16px;">
+    <a href="{% url 'accounts:otp_login' %}" class="btn btn-block" style="justify-content:center;">
+      {% icon "key" "icon" %} Sign in with OTP
+    </a>
+  </div>
+
   <p class="form-foot">New to Vaultline? <a href="{% url 'accounts:register' %}">Open an account</a></p>
 {% endblock %}
