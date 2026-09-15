@@ -1,11 +1,16 @@
 # ===========================================================================
-# systemd unit for the Brute-Force Authentication Lab (Daphne ASGI server).
+# systemd unit for the Brute-Force Authentication Lab (gunicorn + uvicorn ASGI).
 # Install at /etc/systemd/system/bruteforce-lab.service, then:
 #   sudo systemctl daemon-reload
-#   sudo systemctl enable --now bruteforce-lab
+#   sudo systemctl restart bruteforce-lab
+#
+# Runs 4 worker processes for concurrency (~4x a single process). Tune -w to
+# roughly (2 * vCPU) + 1 for your instance.  WebSocket group messaging and the
+# per-IP login rate limiter both rely on Redis being shared across workers, so
+# the .env MUST set:  REDIS_URL=redis://127.0.0.1:6379/0
 # ===========================================================================
 [Unit]
-Description=Brute-Force Authentication Lab (Daphne ASGI)
+Description=Brute-Force Authentication Lab (gunicorn + uvicorn ASGI)
 After=network.target postgresql.service redis-server.service
 Wants=redis-server.service
 
@@ -17,7 +22,16 @@ WorkingDirectory=/home/ubuntu/bruteforce-lab
 # All secrets come from the environment file (chmod 600, owned by ubuntu).
 EnvironmentFile=/home/ubuntu/bruteforce-lab/.env
 Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
-ExecStart=/home/ubuntu/bruteforce-lab/.venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application
+ExecStart=/home/ubuntu/bruteforce-lab/.venv/bin/gunicorn config.asgi:application \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers 4 \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --graceful-timeout 30 \
+    --max-requests 2000 \
+    --max-requests-jitter 200 \
+    --access-logfile - \
+    --error-logfile -
 Restart=on-failure
 RestartSec=3
 

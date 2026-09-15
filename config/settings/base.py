@@ -228,6 +228,24 @@ else:
     }
 
 # ---------------------------------------------------------------------------
+# Cache — backs the per-IP login rate limiter (apps.challenge.services.rate_ok).
+# With multiple worker processes a per-process cache gives each worker its own
+# rate-limit bucket, so use Redis (shared across workers) when REDIS_URL is set;
+# fall back to the local in-memory cache for single-process dev.
+# ---------------------------------------------------------------------------
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+
+# ---------------------------------------------------------------------------
 # Request size guard (infrastructure protection)
 # ---------------------------------------------------------------------------
 # Reject oversized request bodies early.  The training endpoint only ever
