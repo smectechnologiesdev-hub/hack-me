@@ -239,6 +239,11 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 512 * 1024
 # ---------------------------------------------------------------------------
 # Lab domain configuration (safe, server-controlled defaults)
 # ---------------------------------------------------------------------------
+# Per-IP-per-minute ceiling on the target portal login (brute-force target).
+# Raise it if a whole room shares one NAT/public IP so the group isn't throttled
+# collectively; lower it to protect a small box. 0 disables the limit.
+LOGIN_THROTTLE_PER_MIN = env_int("LOGIN_THROTTLE_PER_MIN", default=1200)
+
 LAB_MAX_ATTEMPTS = env_int("LAB_MAX_ATTEMPTS", default=100)
 LAB_DURATION_MINUTES = env_int("LAB_DURATION_MINUTES", default=60)
 SHOW_FULL_CANDIDATE_PASSWORDS = env_bool(

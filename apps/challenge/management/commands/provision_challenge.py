@@ -74,10 +74,14 @@ class Command(BaseCommand):
         parser.add_argument("--vault-id", type=str, default=SHARED_VAULT_ID, help="Shared vault id for every target.")
         parser.add_argument("--vault-password", type=str, default=SHARED_VAULT_PASSWORD, help="Shared vault password for every target.")
         parser.add_argument("--fresh", action="store_true", help="Delete existing UNASSIGNED targets first.")
+        parser.add_argument("--reset", action="store_true", help="Delete ALL targets first (full from-scratch refresh; clears every student's progress).")
         parser.add_argument("--assign", action="store_true", help="Assign spare targets to students who lack one.")
 
     def handle(self, *args, **opts):
-        if opts["fresh"]:
+        if opts["reset"]:
+            deleted, _ = VaultClient.objects.all().delete()
+            self.stdout.write(self.style.WARNING(f"RESET: removed ALL {deleted} existing target(s) + their progress."))
+        elif opts["fresh"]:
             deleted, _ = VaultClient.objects.filter(assigned_to__isnull=True).delete()
             self.stdout.write(f"Removed {deleted} unassigned target(s).")
 

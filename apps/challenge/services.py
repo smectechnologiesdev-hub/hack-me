@@ -79,10 +79,20 @@ def record_milestone(client: VaultClient, field: str) -> None:
 # Lightweight per-IP throttle (protects the shared box; the portal login is a
 # plain Django view, so DRF's throttling does not apply to it).
 # ---------------------------------------------------------------------------
-def rate_ok(ip: str, scope: str = "portal_login", limit: int = 1200, window: int = 60) -> bool:
+def rate_ok(ip: str, scope: str = "portal_login", limit: int | None = None, window: int = 60) -> bool:
     """Fixed-window per-IP limiter.  Generous enough for a rockyou run; finite
     enough that one IP cannot flood the server.  Returns False when over limit.
+
+    The default per-IP-per-minute ceiling comes from ``settings.LOGIN_THROTTLE_PER_MIN``
+    (env ``LOGIN_THROTTLE_PER_MIN``) so it can be raised on the server without a
+    code change — e.g. when a whole room shares one NAT/public IP.
     """
+    from django.conf import settings
+
+    if limit is None:
+        limit = getattr(settings, "LOGIN_THROTTLE_PER_MIN", 1200)
+    if limit <= 0:
+        return True  # 0 (or negative) disables the limit entirely
     bucket = int(time.time() // window)
     key = f"rl:{scope}:{ip}:{bucket}"
     try:
