@@ -88,22 +88,27 @@ def client_ip(request) -> str:
 # ---------------------------------------------------------------------------
 # Scoreboard
 # ---------------------------------------------------------------------------
-def scoreboard_rows() -> list[dict]:
-    """Ranked rows for assigned participants: most points first, earliest solve wins ties."""
+def scoreboard_rows(include_contact: bool = False) -> list[dict]:
+    """Ranked rows for assigned participants: most points first, earliest solve wins ties.
+
+    ``include_contact`` adds each operator's phone number — set ONLY for the
+    staff Command monitor, NEVER for the public scoreboard feed.
+    """
     rows = []
     qs = VaultClient.objects.filter(assigned_to__isnull=False).select_related("assigned_to")
     for c in qs:
-        rows.append(
-            {
-                "handle": c.assigned_to.get_username(),
-                "points": c.points,
-                "stages_done": c.stages_done,
-                "total_stages": len(c.POINTS),
-                "solved": c.is_solved,
-                "solved_at": c.captured_flag_at,
-                "stage_flags": {field: getattr(c, field) is not None for field in c.POINTS},
-            }
-        )
+        row = {
+            "handle": c.assigned_to.get_username(),
+            "points": c.points,
+            "stages_done": c.stages_done,
+            "total_stages": len(c.POINTS),
+            "solved": c.is_solved,
+            "solved_at": c.captured_flag_at,
+            "stage_flags": {field: getattr(c, field) is not None for field in c.POINTS},
+        }
+        if include_contact:
+            row["phone"] = getattr(c.assigned_to, "phone", "") or "—"
+        rows.append(row)
     # Most points first; among ties, an earlier solve beats a later/none.
     rows.sort(key=lambda r: (-r["points"], r["solved_at"] is None, r["solved_at"] or ""))
     for i, r in enumerate(rows, start=1):

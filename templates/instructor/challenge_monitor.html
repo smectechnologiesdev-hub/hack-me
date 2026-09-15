@@ -31,9 +31,9 @@
     <div class="table-wrap">
       <table class="data">
         <thead>
-          <tr><th style="width:40px;">Rank</th><th>Operator</th><th>Objectives</th><th style="text-align:right;">Score</th><th>Last seen</th></tr>
+          <tr><th style="width:40px;">Rank</th><th>Operator</th><th>Phone</th><th>Objectives</th><th style="text-align:right;">Score</th><th>Last seen</th></tr>
         </thead>
-        <tbody id="rank-body"><tr><td colspan="5" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
+        <tbody id="rank-body"><tr><td colspan="6" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -71,13 +71,14 @@
 
   function renderRank(rows, lastSeen){
     const body = document.getElementById("rank-body");
-    if(!rows.length){ body.innerHTML = `<tr><td colspan="5" class="faint" style="text-align:center;padding:22px;">No players yet.</td></tr>`; return; }
+    if(!rows.length){ body.innerHTML = `<tr><td colspan="6" class="faint" style="text-align:center;padding:22px;">No players yet.</td></tr>`; return; }
     body.innerHTML = rows.map(r => {
       const medal = r.rank === 1 && r.points > 0 ? "🥇 " : (r.rank === 2 ? "🥈 " : (r.rank === 3 ? "🥉 " : ""));
       const solved = r.solved ? ` <span class="badge badge-completed">solved</span>` : "";
       return `<tr>
         <td class="mono">${r.rank}</td>
         <td class="mono">${medal}${r.handle}${solved}</td>
+        <td class="mono" style="font-size:.85rem;">${r.phone || "—"}</td>
         <td>${dots(r.stage_flags)} <span class="faint" style="font-size:.8rem;">${r.stages_done}/5</span></td>
         <td class="mono" style="text-align:right;font-weight:700;">${r.points}</td>
         <td class="faint mono" style="font-size:.8rem;">${lastSeen[r.handle] || "—"}</td>

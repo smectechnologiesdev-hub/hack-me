@@ -84,7 +84,7 @@ class ChallengeMonitorDataView(InstructorRequiredMixin, View):
             for e in activity_feed()
         ]
         return JsonResponse(
-            {"rows": scoreboard_rows(), "feed": feed},
+            {"rows": scoreboard_rows(include_contact=True), "feed": feed},
             json_dumps_params={"default": str},
         )
 
