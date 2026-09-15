@@ -34,36 +34,25 @@
     </div>
   </div>
 
-  <div class="grid grid-2" style="gap:18px;">
-    <!-- Sealed vault -->
-    <div class="card ticked">
-      <div class="spread">
-        <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Sealed vault</div>
-        {% if client.password_rotated %}
-          <span class="badge badge-completed">Clearance granted</span>
-        {% else %}
-          <span class="stamp">Access denied</span>
-        {% endif %}
-      </div>
+  <!-- Sealed vault -->
+  <div class="card ticked">
+    <div class="spread">
+      <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Sealed vault</div>
       {% if client.password_rotated %}
-        <p class="subtle" style="margin-top:12px;">Clearance updated. Submit the recovered vault credentials to breach the vault.</p>
-        <a href="{% url 'challenge:vault' %}" class="btn btn-primary btn-block" style="margin-top:8px;">Proceed to vault {% icon "arrow-right" "icon" %}</a>
+        <span class="badge badge-completed">Clearance granted</span>
       {% else %}
-        <p class="subtle" style="margin-top:12px;">
-          Vault access is sealed. Clearance is re-issued only after the account passphrase is <strong>rotated</strong>.
-        </p>
-        <a href="{% url 'challenge:rotate_password' %}" class="btn btn-outline btn-block" style="margin-top:8px;">Update password to get access {% icon "key" "icon" %}</a>
+        <span class="stamp">Access denied</span>
       {% endif %}
     </div>
-
-    <!-- Personnel / data -->
-    <div class="card">
-      <div class="card-title">{% icon "user" "icon" %} Personnel &amp; data</div>
+    {% if client.password_rotated %}
+      <p class="subtle" style="margin-top:12px;">Clearance updated. Submit the recovered vault credentials to breach the vault.</p>
+      <a href="{% url 'challenge:vault' %}" class="btn btn-primary btn-block" style="margin-top:8px;">Proceed to vault {% icon "arrow-right" "icon" %}</a>
+    {% else %}
       <p class="subtle" style="margin-top:12px;">
-        Subject personnel record and data-portability export. Review the file for exposed intelligence.
+        Vault access is sealed. Clearance is re-issued only after the account passphrase is <strong>rotated</strong>.
       </p>
-      <a href="{% url 'challenge:profile' %}" class="btn btn-block" style="margin-top:8px;">Open personnel file {% icon "arrow-right" "icon" %}</a>
-    </div>
+      <a href="{% url 'challenge:rotate_password' %}" class="btn btn-outline btn-block" style="margin-top:8px;">Update password to get access {% icon "key" "icon" %}</a>
+    {% endif %}
   </div>
 
   <div class="card mt-2">

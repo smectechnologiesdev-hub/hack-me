@@ -49,24 +49,24 @@ class PortalLoginTests(TestCase):
         self.assertEqual(r.status_code, 401)
         self.assertFalse(r.json()["success"])
 
-    def test_sqli_auth_bypass(self):
-        # username = victim' --  comments out the password check.
+    def test_sqli_is_blocked(self):
+        # A classic auth-bypass payload must NOT authenticate (parameterised query).
         r = self.client.post(
             self.url,
             data=json.dumps({"username": f"{self.target.username}' --", "password": "anything"}),
             content_type="application/json",
         )
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.json()["success"])
+        self.assertEqual(r.status_code, 401)
+        self.assertFalse(r.json()["success"])
 
-    def test_login_does_not_reflect_data(self):
-        # Auth-bypass oracle only: a UNION-style payload must not leak rows.
+    def test_injection_does_not_leak_or_authenticate(self):
+        # A UNION-style payload is treated as a literal username: no match, no leak.
         r = self.client.post(
             self.url,
             data=json.dumps({"username": "x' UNION SELECT flag FROM challenge_vaultclient --", "password": "y"}),
             content_type="application/json",
         )
-        # Whatever happens, the flag must never appear in the response body.
+        self.assertFalse(r.json()["success"])
         self.assertNotIn(self.target.flag, r.content.decode())
 
 
