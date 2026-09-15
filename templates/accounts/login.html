@@ -27,11 +27,5 @@
     <button type="submit" class="btn btn-primary btn-block btn-lg">Authenticate {% icon "arrow-right" "icon" %}</button>
   </form>
 
-  <div class="form-row" style="margin-top:16px;">
-    <a href="{% url 'accounts:otp_login' %}" class="btn btn-block" style="justify-content:center;">
-      {% icon "key" "icon" %} Access code sign-in
-    </a>
-  </div>
-
   <p class="form-foot">No clearance yet? <a href="{% url 'accounts:register' %}">Request operator access</a></p>
 {% endblock %}
