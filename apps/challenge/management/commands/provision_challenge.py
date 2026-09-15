@@ -23,13 +23,21 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.challenge import crypto
 from apps.challenge.models import VaultClient
 
-# Bank-style username parts (kept apart from the target passwords).
-_FIRST = list("jmasrkltenphdcbgowf")
+# Bank-style username parts (kept apart from the target passwords). The pool is
+# sized so hundreds of UNIQUE first.last usernames generate without collisions
+# (26 x 70 = 1820 combinations — comfortably above a 500-target event).
+_FIRST = list("abcdefghijklmnopqrstuvwxyz")
 _LAST = [
     "reynolds", "kessler", "harper", "donovan", "mercer", "vaughn", "sloane",
     "ellison", "brooks", "navarro", "whitlock", "ashford", "lockhart", "sterling",
     "beckett", "hollis", "marlowe", "cavanagh", "rutledge", "delacroix", "fairbanks",
     "abernathy", "castellano", "hawthorne", "kingsley", "underwood", "wolcott",
+    "caldwell", "prescott", "langley", "hargrove", "winslow", "ashby", "corbin",
+    "driscoll", "farrow", "greaves", "hadley", "jarvis", "kirkland", "lanning",
+    "mabry", "ogden", "pemberton", "radcliffe", "sinclair", "thorne", "upton",
+    "vance", "waverly", "yates", "ziegler", "ashcroft", "bexley", "cromwell",
+    "danforth", "everett", "fenwick", "grimshaw", "holloway", "ingram", "keswick",
+    "lockwood", "merrick", "norcross", "orwell", "pennington", "quimby", "ridley",
 ]
 
 # Curated fallback passwords: real, well-known leaked passwords (present in

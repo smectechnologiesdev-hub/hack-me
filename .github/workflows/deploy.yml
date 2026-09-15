@@ -79,6 +79,10 @@ jobs:
           . .venv/bin/activate
           pip install -r requirements.txt -q
           python manage.py migrate --noinput
+          # Ensure 500 unique challenge targets exist and every student has one.
+          # Idempotent: only creates the shortfall, never deletes or duplicates.
+          python manage.py provision_challenge --count 500 \
+            --wordlist tools/wordlist.txt --min-rank 50 --max-rank 1100 --assign
           python manage.py collectstatic --noinput
           sudo systemctl restart bruteforce-lab
           echo "Deploy complete: $(python manage.py --version 2>/dev/null || true)"
