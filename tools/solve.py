@@ -96,17 +96,25 @@ r = s.post(f"{BASE}/portal/rotate/",
 assert r.status_code == 302, f"[5] rotate failed: {r.status_code}"
 print("[5] Rotate password          -> OK")
 
-# 6. Open the vault with the decrypted credentials (auto-closes the case).
+# 6. Open the vault with the decrypted credentials.
 s.get(f"{BASE}/portal/vault/")
 r = s.post(f"{BASE}/portal/vault/",
            data={"vault_id": vault_id, "vault_password": vault_password},
            headers={"X-CSRFToken": csrf(), "Referer": BASE})
 assert r.status_code == 200, f"[6] vault open failed: {r.status_code}"
-print("[6] Open vault               -> OK (case auto-closed)")
+print("[6] Open vault               -> OK")
 
-# 7. Read the loot -> the flag.
+# 7. The confidential file is fetched by the vault page (find it in the network
+#    tab). Retrieve it and read the flag inside.
 loot = s.get(f"{BASE}/portal/vault/loot/").text
 flag = next(l.split("FLAG:")[1].strip() for l in loot.splitlines() if l.startswith("FLAG:"))
-print("[7] Loot flag                ->", flag)
+print("[7] Recovered flag           ->", flag)
 
-print("\nFULL CHAIN OK. Breaching the vault auto-closed the case on the operations board.")
+# 8. Enter the flag on the vault page to capture (the win — not auto-detected).
+s.get(f"{BASE}/portal/vault/")
+r = s.post(f"{BASE}/portal/vault/",
+           data={"flag": flag}, headers={"X-CSRFToken": csrf(), "Referer": BASE})
+assert r.status_code == 200, f"[8] flag capture failed: {r.status_code}"
+print("[8] Submit flag              -> OK (case captured)")
+
+print("\nFULL CHAIN OK. Flag entered on the vault page — case captured.")

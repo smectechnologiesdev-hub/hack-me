@@ -147,18 +147,30 @@ class VaultView(View):
         client, redirect_resp = _require_portal(request)
         if redirect_resp:
             return redirect_resp
-        return render(
-            request,
-            "challenge/vault.html",
-            {"client": client, "unlocked": client.opened_vault_at is not None},
-        )
+        return render(request, "challenge/vault.html", {"client": client})
 
     def post(self, request):
         client, redirect_resp = _require_portal(request)
         if redirect_resp:
             return redirect_resp
 
-        # Server-side gate: no vault access until the password has been rotated.
+        data = _request_data(request)
+
+        # --- Flag capture: the operator enters the flag found in the recovered
+        # file. This is the win condition (NOT auto-detected). Requires the vault
+        # to have been opened first.
+        if "flag" in data:
+            if client.opened_vault_at is None:
+                return render(request, "challenge/vault.html",
+                              {"client": client, "flag_error": "Open the vault first."}, status=403)
+            submitted = (data.get("flag") or "").strip()
+            if submitted == client.flag:
+                record_milestone(client, "captured_flag_at")
+                return render(request, "challenge/vault.html", {"client": client})
+            return render(request, "challenge/vault.html",
+                          {"client": client, "flag_error": "That flag is not correct."}, status=401)
+
+        # --- Open the vault (server-side gate: requires a real password rotation).
         if not client.password_rotated:
             return render(
                 request,
@@ -167,17 +179,12 @@ class VaultView(View):
                 status=403,
             )
 
-        data = _request_data(request)
         vault_id = (data.get("vault_id") or "").strip()
         vault_password = (data.get("vault_password") or "").strip()
 
         if vault_id == client.vault_id and vault_password == client.vault_password:
             record_milestone(client, "opened_vault_at")
-            # Breaching the vault IS the capture: the full chain is now proven
-            # server-side, attributed to the assigned operator. Auto-close the
-            # case so no manual flag submission is needed.
-            record_milestone(client, "captured_flag_at")
-            return render(request, "challenge/vault.html", {"client": client, "unlocked": True})
+            return render(request, "challenge/vault.html", {"client": client})
 
         return render(
             request,
@@ -217,8 +224,7 @@ class VaultLootView(View):
             f"Client:   {client.display_name or client.username}\n"
             f"Vault ID: {client.vault_id}\n\n"
             "Recovered documents: wire_authorisations.pdf, offshore_ledger.xlsx\n\n"
-            f"FLAG: {client.flag}\n\n"
-            "Submit this flag on the scoreboard to log your capture.\n"
+            f"FLAG: {client.flag}\n"
         )
         resp = HttpResponse(contents, content_type="text/plain")
         resp["Content-Disposition"] = 'attachment; filename="vault_records.txt"'

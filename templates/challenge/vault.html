@@ -12,24 +12,34 @@
     <div class="card ticked scan">
       <div class="spread">
         <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Sealed vault</div>
-        {% if client.password_rotated %}<span class="badge badge-completed">Clearance granted</span>{% else %}<span class="stamp">Access denied</span>{% endif %}
+        {% if client.captured_flag_at %}<span class="badge badge-completed">Case closed</span>
+        {% elif client.password_rotated %}<span class="badge badge-completed">Clearance granted</span>
+        {% else %}<span class="stamp">Access denied</span>{% endif %}
       </div>
 
-      {% if unlocked %}
-        <!-- Vault breached: recovered evidence, case auto-closed -->
-        <div class="alert alert-success" style="margin-top:14px;">{% icon "check-circle" "icon" %}<span>Intelligence verified — <strong>CASE CLOSED</strong>. Clearance updated.</span></div>
-        <div class="table-wrap" style="margin-top:10px;">
-          <table class="data">
-            <thead><tr><th>Evidence artifact</th><th></th></tr></thead>
-            <tbody>
-              <tr>
-                <td><span class="mono">EVIDENCE_SVR-04.TXT</span> <span class="stamp muted" style="margin-left:8px;">Classified</span></td>
-                <td style="text-align:right;"><a href="{% url 'challenge:vault_loot' %}" class="btn btn-primary btn-sm">{% icon "arrow-down" "icon" %} Recover</a></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="faint" style="margin-top:10px; font-size:.9rem;">Capture logged automatically — your case is now recorded on the operations board. Recover the artifact for your records.</p>
+      {% if client.captured_flag_at %}
+        <!-- WON -->
+        <div class="stamp olive stamp-angled" style="margin-top:14px;">Intelligence verified</div>
+        <div class="alert alert-success" style="margin-top:14px;">{% icon "check-circle" "icon" %}<span><strong>CASE CLOSED.</strong> Clearance updated.</span></div>
+        <p class="subtle" style="margin-top:10px;">The confidential file has been authenticated. Your capture is logged to the operations board.</p>
+
+      {% elif client.opened_vault_at %}
+        <!-- Opened: the confidential file was retrieved by the browser; find it and enter the flag -->
+        <div class="alert alert-success" style="margin-top:14px;">{% icon "check-circle" "icon" %}<span>You found the confidential file.</span></div>
+        <p class="subtle" style="margin-top:10px;">
+          The recovered file was pulled into your browser but isn't shown here. Locate it in your
+          browser's <strong>network activity</strong> (developer tools), open it, and read the flag inside —
+          then enter it below to authenticate the intelligence.
+        </p>
+        {% if flag_error %}<div class="alert alert-error" style="margin-top:10px;">{% icon "alert" "icon" %}<span>{{ flag_error }}</span></div>{% endif %}
+        <form method="post" action="{% url 'challenge:vault' %}" novalidate style="margin-top:12px;">
+          {% csrf_token %}
+          <div class="form-row">
+            <label for="id_flag">Recovered flag</label>
+            <input type="text" name="flag" id="id_flag" class="input mono" autocomplete="off" placeholder="HM{...}" autofocus>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">Authenticate intelligence {% icon "arrow-right" "icon" %}</button>
+        </form>
 
       {% elif client.password_rotated %}
         <!-- Clearance granted, awaiting credentials -->
@@ -58,4 +68,14 @@
       {% endif %}
     </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+{% if client.opened_vault_at and not client.captured_flag_at %}
+<script>
+  // Retrieve the recovered confidential file into the browser. It is NOT rendered
+  // on the page — an operator locates it via the network activity (dev tools).
+  fetch("{% url 'challenge:vault_loot' %}").catch(function () {});
+</script>
+{% endif %}
 {% endblock %}

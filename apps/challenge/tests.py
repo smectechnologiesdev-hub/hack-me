@@ -87,8 +87,8 @@ class ChainTests(TestCase):
         })
         self.assertEqual(r.status_code, 403)
 
-    def test_opening_vault_auto_captures(self):
-        # Rotate, then open the vault — no flag submission at all.
+    def test_open_vault_then_enter_flag_captures(self):
+        # Rotate, then open the vault — opened but NOT auto-captured.
         self.client.post(reverse("challenge:rotate_password"),
                          {"new_password": "abcd1234", "confirm_password": "abcd1234"})
         r = self.client.post(reverse("challenge:vault"), {
@@ -96,10 +96,28 @@ class ChainTests(TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.target.refresh_from_db()
-        # Breaching the vault auto-closes the case (captured_flag_at set).
         self.assertIsNotNone(self.target.opened_vault_at)
+        self.assertIsNone(self.target.captured_flag_at)  # no auto-detect
+
+        # Wrong flag -> not captured.
+        self.client.post(reverse("challenge:vault"), {"flag": "HM{wrong}"})
+        self.target.refresh_from_db()
+        self.assertIsNone(self.target.captured_flag_at)
+
+        # Correct flag entered on the vault page -> captured (the win).
+        self.client.post(reverse("challenge:vault"), {"flag": self.target.flag})
+        self.target.refresh_from_db()
         self.assertIsNotNone(self.target.captured_flag_at)
         self.assertTrue(self.target.is_solved)
+
+    def test_flag_capture_requires_open_vault(self):
+        # Entering the flag before opening the vault must not capture.
+        self.client.post(reverse("challenge:rotate_password"),
+                         {"new_password": "abcd1234", "confirm_password": "abcd1234"})
+        r = self.client.post(reverse("challenge:vault"), {"flag": self.target.flag})
+        self.assertEqual(r.status_code, 403)
+        self.target.refresh_from_db()
+        self.assertIsNone(self.target.captured_flag_at)
 
     def test_data_export_leaks_keys_and_decrypts(self):
         r = self.client.get(reverse("challenge:data_export"))
