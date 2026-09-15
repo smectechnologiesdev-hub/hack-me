@@ -1,0 +1,71 @@
+{% extends "challenge/_portal_base.html" %}
+{% load icons %}
+{% block title %}Overview · Vaultline Client Portal{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1 style="margin-bottom:2px;">Welcome back, <span class="gradient-text">{{ client.display_name|default:client.username }}</span></h1>
+      <p class="sub faint">Vaultline Private · Client {{ client.username }}</p>
+    </div>
+    <span class="chip">{% icon "lock" "icon" %} Secure session</span>
+  </div>
+
+  <!-- Balance card -->
+  <div class="card" style="background:linear-gradient(150deg, #0f2b24 0%, #0b1017 60%); margin:18px 0;">
+    <div class="spread" style="flex-wrap:wrap; gap:16px;">
+      <div>
+        <div class="stat-label">Total balance</div>
+        <div class="mono" style="font-size:2.2rem; font-weight:700; letter-spacing:-.02em; margin-top:6px;">$128,940<span class="faint">.20</span></div>
+        <div class="mono faint" style="font-size:.85rem; margin-top:4px;">Account •••• 4921 · USD</div>
+      </div>
+      <span class="chip" style="border-color:rgba(47,224,176,.3); color:var(--brand); align-self:flex-start;">{% icon "activity" "icon" %} +2.4% this month</span>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="gap:18px;">
+    <!-- Open Vault (locked) -->
+    <div class="card">
+      <div class="spread">
+        <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Open Vault</div>
+        {% if client.password_rotated %}
+          <span class="badge badge-completed">Unlocked</span>
+        {% else %}
+          <span class="badge">🔒 Locked</span>
+        {% endif %}
+      </div>
+      {% if client.password_rotated %}
+        <p class="subtle" style="margin-top:10px;">Vault access is enabled. Enter your vault credentials to continue.</p>
+        <a href="{% url 'challenge:vault' %}" class="btn btn-primary btn-block" style="margin-top:8px;">Go to vault {% icon "arrow-right" "icon" %}</a>
+      {% else %}
+        <p class="subtle" style="margin-top:10px;">
+          For your security, vault access stays locked until you <strong>rotate your account password</strong>.
+        </p>
+        <a href="{% url 'challenge:rotate_password' %}" class="btn btn-outline btn-block" style="margin-top:8px;">Rotate password to unlock {% icon "key" "icon" %}</a>
+      {% endif %}
+    </div>
+
+    <!-- Profile / data -->
+    <div class="card">
+      <div class="card-title">{% icon "user" "icon" %} Profile &amp; data</div>
+      <p class="subtle" style="margin-top:10px;">
+        Manage your details, security settings, and download a copy of your account data.
+      </p>
+      <a href="{% url 'challenge:profile' %}" class="btn btn-block" style="margin-top:8px;">Open profile {% icon "arrow-right" "icon" %}</a>
+    </div>
+  </div>
+
+  <div class="card mt-2">
+    <div class="card-title">Recent activity</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td class="faint mono">Aug 21</td><td>Transfer — Meridian Holdings</td><td class="mono">−$2,400.00</td></tr>
+          <tr><td class="faint mono">Aug 19</td><td>Deposit — Payroll</td><td class="mono" style="color:var(--success)">+$8,150.00</td></tr>
+          <tr><td class="faint mono">Aug 18</td><td>Card — Blue Bottle Coffee</td><td class="mono">−$6.75</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -19,6 +19,9 @@ daphne==4.1.2
 python-dotenv==1.2.3
 dj-database-url==3.1.2
 
+# Cryptography — AES-256-GCM for the vault credential encryption (challenge)
+cryptography==50.0.1
+
 # Production database driver (PostgreSQL). Commented so local SQLite dev
 # does not require build tooling. Uncomment for production installs.
 # psycopg[binary]==3.2.4

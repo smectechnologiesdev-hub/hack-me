@@ -19,6 +19,8 @@ urlpatterns = [
     # HTML / template routes
     path("", include("apps.core.urls")),
     path("", include("apps.accounts.urls")),
+    # Vaultline Heist challenge (victim portal + scoreboard).
+    path("", include("apps.challenge.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
     path("instructor/", include(("apps.dashboard.urls_instructor", "instructor"))),
 

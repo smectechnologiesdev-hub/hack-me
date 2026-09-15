@@ -21,15 +21,24 @@ User = get_user_model()
 
 
 class DashboardHomeView(LoginRequiredMixin, TemplateView):
-    """/dashboard/ — the account vault shown after signing in."""
+    """/dashboard/ — the participant's mission briefing.
+
+    Shows the student their assigned target, the starter script, tiered hints,
+    live progress, and the flag-submission form.
+    """
 
     template_name = "dashboard/home.html"
 
     def get_context_data(self, **kwargs):
+        from apps.challenge.models import VaultClient
+
         context = super().get_context_data(**kwargs)
-        # Fire the celebration once, right after a successful sign-in.
         context["just_accessed"] = self.request.session.pop("just_accessed", False)
         context["is_instructor"] = self.request.user.is_staff
+        context["target"] = VaultClient.objects.filter(
+            assigned_to=self.request.user
+        ).first()
+        context["flag_result"] = self.request.session.pop("flag_result", None)
         return context
 
 

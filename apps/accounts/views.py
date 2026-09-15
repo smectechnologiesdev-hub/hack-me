@@ -37,6 +37,33 @@ from .models import OtpChallenge
 OTP_TTL_SECONDS = getattr(settings, "OTP_TTL_SECONDS", 1800)
 
 
+def _assign_target(user) -> None:
+    """Assign a spare Vaultline Heist target to a freshly-registered student.
+
+    Row-locked so two simultaneous registrations can't grab the same target.
+    If no spare exists, the student is left unassigned (an instructor provisions
+    more with ``manage.py provision_challenge``).
+    """
+    from django.db import transaction
+
+    from apps.challenge.models import VaultClient
+
+    try:
+        with transaction.atomic():
+            spare = (
+                VaultClient.objects.select_for_update()
+                .filter(assigned_to__isnull=True)
+                .order_by("id")
+                .first()
+            )
+            if spare is not None:
+                spare.assigned_to = user
+                spare.save(update_fields=["assigned_to"])
+    except Exception:
+        # Never let assignment break registration.
+        pass
+
+
 class RegisterView(CreateView):
     """Self-service registration; logs the user straight in on success."""
 
@@ -48,6 +75,7 @@ class RegisterView(CreateView):
         response = super().form_valid(form)
         login(self.request, self.object)
         self.request.session["just_accessed"] = True
+        _assign_target(self.object)
         return response
 
     def dispatch(self, request, *args, **kwargs):

@@ -1,0 +1,29 @@
+{% extends "base_auth.html" %}
+{% load icons %}
+{% block title %}Client Portal · Vaultline{% endblock %}
+
+{% block auth_body %}
+  <h2 class="mt-0" style="font-size:1.6rem;">Vaultline Client Portal</h2>
+  <p class="subtle">Sign in to the private client portal.</p>
+
+  {% if error %}
+    <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ error }}</span></div>
+  {% endif %}
+
+  <form method="post" action="{% url 'challenge:portal_login' %}" novalidate style="margin-top:20px;">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="id_username">Client username</label>
+      <input type="text" name="username" id="id_username" class="input" autocomplete="off" autofocus>
+    </div>
+    <div class="form-row">
+      <label for="id_password">Password</label>
+      <input type="password" name="password" id="id_password" class="input" autocomplete="off">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in {% icon "arrow-right" "icon" %}</button>
+  </form>
+
+  <p class="form-foot faint" style="margin-top:16px;">
+    Legacy portal · session {{ request.session.session_key|default:"—"|slice:":6" }}
+  </p>
+{% endblock %}

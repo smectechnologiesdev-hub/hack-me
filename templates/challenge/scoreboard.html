@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Scoreboard · Vaultline Heist{% endblock %}
+
+{% block content %}
+<section class="container" style="padding-block:28px; max-width:900px;">
+  <div class="section-head" style="text-align:left; margin-bottom:18px;">
+    <span class="section-kicker">{% icon "activity" "icon" %} Live</span>
+    <h2 style="margin:6px 0;">Vaultline Heist — Scoreboard</h2>
+    <p class="faint" style="margin:0;">Ranked by points, then earliest capture. Updates automatically.</p>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="data" id="board">
+        <thead>
+          <tr><th style="width:48px;">#</th><th>Player</th><th>Progress</th><th style="text-align:right;">Points</th></tr>
+        </thead>
+        <tbody id="board-body">
+          <tr><td colspan="4" class="faint" style="text-align:center; padding:22px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="faint mono" id="board-status" style="margin-top:10px; font-size:.8rem;">—</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const STAGES = ["cracked_login_at","downloaded_data_at","rotated_password_at","opened_vault_at","captured_flag_at"];
+  const STAGE_TITLES = ["Broke in","Found data export","Rotated password","Opened vault","Captured flag"];
+
+  function dots(flags){
+    return STAGES.map((k,i)=>{
+      const on = !!flags[k];
+      return `<span title="${STAGE_TITLES[i]}" style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;`
+        + (on ? "background:var(--brand);" : "background:var(--panel-3);border:1px solid var(--hairline);") + `"></span>`;
+    }).join("");
+  }
+
+  function render(rows){
+    const body = document.getElementById("board-body");
+    if(!rows.length){ body.innerHTML = `<tr><td colspan="4" class="faint" style="text-align:center;padding:22px;">No players yet.</td></tr>`; return; }
+    body.innerHTML = rows.map(r=>{
+      const solved = r.solved ? ` <span class="badge badge-completed">solved</span>` : "";
+      return `<tr>
+        <td class="mono">${r.rank}</td>
+        <td class="mono">${r.handle}${solved}</td>
+        <td>${dots(r.stage_flags)} <span class="faint" style="font-size:.8rem;">${r.stages_done}/${r.total_stages}</span></td>
+        <td class="mono" style="text-align:right;font-weight:700;">${r.points}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  async function poll(){
+    try{
+      const res = await fetch("{% url 'challenge:scoreboard_data' %}", {headers:{"Accept":"application/json"}});
+      const data = await res.json();
+      render(data.rows || []);
+      document.getElementById("board-status").textContent = "updated " + new Date().toLocaleTimeString();
+    }catch(e){
+      document.getElementById("board-status").textContent = "offline — retrying…";
+    }
+  }
+  poll();
+  setInterval(poll, 4000);
+</script>
+{% endblock %}

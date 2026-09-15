@@ -23,7 +23,13 @@
 
     <nav class="sidebar-nav">
       <a href="{% url 'dashboard:home' %}" class="nav-item {% if ns == 'dashboard' %}active{% endif %}">
-        {% icon "grid" "nav-ico" %} Dashboard
+        {% icon "target" "nav-ico" %} My mission
+      </a>
+      <a href="{% url 'challenge:scoreboard' %}" class="nav-item {% if request.resolver_match.url_name == 'scoreboard' %}active{% endif %}">
+        {% icon "activity" "nav-ico" %} Scoreboard
+      </a>
+      <a href="{% url 'challenge:portal_login' %}" class="nav-item">
+        {% icon "lock" "nav-ico" %} Target portal
       </a>
 
       {% if user.is_staff %}

