@@ -34,6 +34,9 @@
 
       {% if user.is_staff %}
         <div class="sidebar-section">Instructor</div>
+        <a href="{% url 'instructor:challenge' %}" class="nav-item {% if request.resolver_match.url_name == 'challenge' %}active{% endif %}">
+          {% icon "target" "nav-ico" %} Challenge Monitor
+        </a>
         <a href="{% url 'instructor:dashboard' %}" class="nav-item {% if ns == 'instructor' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
           {% icon "gauge" "nav-ico" %} Overview
         </a>

@@ -128,6 +128,31 @@ def scoreboard_rows() -> list[dict]:
     return rows
 
 
+def activity_feed(limit: int = 150) -> list[dict]:
+    """Reverse-chronological log of every stage each student has reached.
+
+    One entry per milestone timestamp across all assigned targets — this is the
+    'who got into which section, and when' log for the instructor monitor.
+    """
+    events = []
+    qs = VaultClient.objects.filter(assigned_to__isnull=False).select_related("assigned_to")
+    for c in qs:
+        for field, label in VaultClient.STAGES:
+            ts = getattr(c, field)
+            if ts:
+                events.append(
+                    {
+                        "handle": c.assigned_to.get_username(),
+                        "stage": label,
+                        "field": field,
+                        "points": VaultClient.POINTS[field],
+                        "at": ts,
+                    }
+                )
+    events.sort(key=lambda e: e["at"], reverse=True)
+    return events[:limit] if limit else events
+
+
 def broadcast_scoreboard() -> None:
     """Push a 'scoreboard changed' nudge to any live viewers over the Channels layer.
 

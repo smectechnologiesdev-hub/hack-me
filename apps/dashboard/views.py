@@ -11,7 +11,9 @@ Dashboard views.
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.utils import timezone
+from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from apps.attempts.models import Attempt
@@ -49,6 +51,42 @@ class InstructorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def test_func(self):
         return self.request.user.is_staff
+
+
+class ChallengeMonitorView(InstructorRequiredMixin, TemplateView):
+    """/instructor/challenge/ — live scoreboard + activity log for the heist."""
+
+    template_name = "instructor/challenge_monitor.html"
+
+    def get_context_data(self, **kwargs):
+        from apps.challenge.services import activity_feed, scoreboard_rows
+
+        context = super().get_context_data(**kwargs)
+        context["rows"] = scoreboard_rows()
+        context["feed"] = activity_feed()
+        return context
+
+
+class ChallengeMonitorDataView(InstructorRequiredMixin, View):
+    """JSON feed the challenge monitor polls: ranking + activity log."""
+
+    def get(self, request, *args, **kwargs):
+        from apps.challenge.services import activity_feed, scoreboard_rows
+
+        feed = [
+            {
+                "handle": e["handle"],
+                "stage": e["stage"],
+                "field": e["field"],
+                "points": e["points"],
+                "at": timezone.localtime(e["at"]).strftime("%b %d, %H:%M:%S"),
+            }
+            for e in activity_feed()
+        ]
+        return JsonResponse(
+            {"rows": scoreboard_rows(), "feed": feed},
+            json_dumps_params={"default": str},
+        )
 
 
 class InstructorDashboardView(InstructorRequiredMixin, TemplateView):

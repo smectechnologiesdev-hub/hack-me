@@ -1,0 +1,126 @@
+{% extends "base_app.html" %}
+{% load icons %}
+{% block title %}Challenge Monitor · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Challenge Monitor{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-outline" href="{% url 'challenge:scoreboard' %}" target="_blank">{% icon "activity" "icon" %} Public scoreboard</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Vaultline Heist — live monitor</h1>
+    <p class="sub faint">Who's ahead, who's behind, and every section as it's cracked.</p>
+  </div>
+  <span class="chip" id="mon-status">{% icon "activity" "icon" %} connecting…</span>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:18px;">
+  <div class="stat"><div class="stat-top"><span class="stat-label">Players</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div><div class="stat-value" id="stat-players">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">Solved</span><span class="stat-ico v">{% icon "check-circle" "icon" %}</span></div><div class="stat-value" id="stat-solved">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">Leader</span><span class="stat-ico">{% icon "target" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-leader">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">First blood</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-firstblood">—</div></div>
+</div>
+
+<div class="grid grid-2" style="gap:18px; align-items:start;">
+  <!-- Ranking -->
+  <div class="card">
+    <div class="card-title">Ranking</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th style="width:40px;">#</th><th>Player</th><th>Stages</th><th style="text-align:right;">Points</th><th>Last seen</th></tr>
+        </thead>
+        <tbody id="rank-body"><tr><td colspan="5" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="card">
+    <div class="card-title">Activity log</div>
+    <div class="table-wrap" style="max-height:520px; overflow-y:auto;">
+      <table class="data">
+        <thead><tr><th>Time</th><th>Player</th><th>Section reached</th><th style="text-align:right;">+pts</th></tr></thead>
+        <tbody id="feed-body"><tr><td colspan="4" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const STAGES = [
+    ["cracked_login_at", "Broke in"],
+    ["downloaded_data_at", "Data export"],
+    ["rotated_password_at", "Rotated pw"],
+    ["opened_vault_at", "Opened vault"],
+    ["captured_flag_at", "Captured flag"],
+  ];
+
+  function dots(flags){
+    return STAGES.map(([k,label]) => {
+      const on = !!flags[k];
+      return `<span title="${label}" style="display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:4px;`
+        + (on ? "background:var(--brand);" : "background:var(--panel-3);border:1px solid var(--hairline);") + `"></span>`;
+    }).join("");
+  }
+
+  function renderRank(rows, lastSeen){
+    const body = document.getElementById("rank-body");
+    if(!rows.length){ body.innerHTML = `<tr><td colspan="5" class="faint" style="text-align:center;padding:22px;">No players yet.</td></tr>`; return; }
+    body.innerHTML = rows.map(r => {
+      const medal = r.rank === 1 && r.points > 0 ? "🥇 " : (r.rank === 2 ? "🥈 " : (r.rank === 3 ? "🥉 " : ""));
+      const solved = r.solved ? ` <span class="badge badge-completed">solved</span>` : "";
+      return `<tr>
+        <td class="mono">${r.rank}</td>
+        <td class="mono">${medal}${r.handle}${solved}</td>
+        <td>${dots(r.stage_flags)} <span class="faint" style="font-size:.8rem;">${r.stages_done}/5</span></td>
+        <td class="mono" style="text-align:right;font-weight:700;">${r.points}</td>
+        <td class="faint mono" style="font-size:.8rem;">${lastSeen[r.handle] || "—"}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function renderFeed(feed){
+    const body = document.getElementById("feed-body");
+    if(!feed.length){ body.innerHTML = `<tr><td colspan="4" class="faint" style="text-align:center;padding:22px;">No activity yet.</td></tr>`; return; }
+    body.innerHTML = feed.map(e => `<tr>
+      <td class="faint mono" style="font-size:.82rem;">${e.at}</td>
+      <td class="mono">${e.handle}</td>
+      <td>${e.stage}</td>
+      <td class="mono" style="text-align:right;color:var(--brand);">+${e.points}</td>
+    </tr>`).join("");
+  }
+
+  async function poll(){
+    try{
+      const res = await fetch("{% url 'instructor:challenge_data' %}", {headers:{"Accept":"application/json"}});
+      const data = await res.json();
+      const rows = data.rows || [], feed = data.feed || [];
+
+      // latest event time per player (feed is newest-first)
+      const lastSeen = {};
+      for(const e of feed){ if(!(e.handle in lastSeen)) lastSeen[e.handle] = e.at; }
+
+      renderRank(rows, lastSeen);
+      renderFeed(feed);
+
+      document.getElementById("stat-players").textContent = rows.length;
+      document.getElementById("stat-solved").textContent = rows.filter(r => r.solved).length;
+      const leader = rows.find(r => r.points > 0);
+      document.getElementById("stat-leader").textContent = leader ? leader.handle : "—";
+      const firstFlag = [...feed].reverse().find(e => e.field === "captured_flag_at");
+      document.getElementById("stat-firstblood").textContent = firstFlag ? firstFlag.handle : "—";
+
+      document.getElementById("mon-status").innerHTML = "live · " + new Date().toLocaleTimeString();
+    }catch(err){
+      document.getElementById("mon-status").textContent = "offline — retrying…";
+    }
+  }
+  poll();
+  setInterval(poll, 4000);
+</script>
+{% endblock %}
