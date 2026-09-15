@@ -3,8 +3,9 @@
 {% block title %}Client Portal · Vaultline{% endblock %}
 
 {% block auth_body %}
-  <h2 class="mt-0" style="font-size:1.6rem;">Vaultline Client Portal</h2>
-  <p class="subtle">Sign in to the private client portal.</p>
+  <span class="kicker kicker-crimson">Target system // SVR-04</span>
+  <h2 class="mt-0" style="font-size:1.6rem; text-transform:uppercase; margin-top:10px;">Compromised node</h2>
+  <p class="subtle">Authenticate to the target system to begin your investigation.</p>
 
   {% if error %}
     <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ error }}</span></div>
@@ -13,17 +14,17 @@
   <form method="post" action="{% url 'challenge:portal_login' %}" novalidate style="margin-top:20px;">
     {% csrf_token %}
     <div class="form-row">
-      <label for="id_username">Client username</label>
+      <label for="id_username">Target operator ID</label>
       <input type="text" name="username" id="id_username" class="input" autocomplete="off" autofocus>
     </div>
     <div class="form-row">
-      <label for="id_password">Password</label>
+      <label for="id_password">Passphrase</label>
       <input type="password" name="password" id="id_password" class="input" autocomplete="off">
     </div>
-    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in {% icon "arrow-right" "icon" %}</button>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Authenticate {% icon "arrow-right" "icon" %}</button>
   </form>
 
-  <p class="form-foot faint" style="margin-top:16px;">
-    Legacy portal · session {{ request.session.session_key|default:"—"|slice:":6" }}
+  <p class="form-foot faint mono" style="margin-top:16px; letter-spacing:.1em;">
+    LEGACY AUTH SERVICE · SESSION {{ request.session.session_key|default:"—"|slice:":6"|upper }}
   </p>
 {% endblock %}

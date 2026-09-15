@@ -7,7 +7,7 @@
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body class="app">
@@ -18,35 +18,36 @@
   <aside class="sidebar">
     <a href="{% url 'core:home' %}" class="sidebar-brand">
       <span class="brand-logo">{% icon "shield" "icon" %}</span>
-      <span class="brand-name">Vaultline</span>
+      <span class="brand-name">Blacksite</span>
     </a>
+    <div class="sidebar-section" style="padding-top:0; padding-bottom:12px;">// Operations</div>
 
     <nav class="sidebar-nav">
       <a href="{% url 'dashboard:home' %}" class="nav-item {% if ns == 'dashboard' %}active{% endif %}">
-        {% icon "target" "nav-ico" %} My mission
+        {% icon "target" "nav-ico" %} Operator brief
       </a>
       <a href="{% url 'challenge:scoreboard' %}" class="nav-item {% if request.resolver_match.url_name == 'scoreboard' %}active{% endif %}">
-        {% icon "activity" "nav-ico" %} Scoreboard
+        {% icon "activity" "nav-ico" %} Operations board
       </a>
       <a href="{% url 'challenge:portal_login' %}" class="nav-item">
-        {% icon "lock" "nav-ico" %} Target portal
+        {% icon "lock" "nav-ico" %} Target system
       </a>
 
       {% if user.is_staff %}
-        <div class="sidebar-section">Instructor</div>
+        <div class="sidebar-section">Command</div>
         <a href="{% url 'instructor:challenge' %}" class="nav-item {% if request.resolver_match.url_name == 'challenge' %}active{% endif %}">
-          {% icon "target" "nav-ico" %} Challenge Monitor
+          {% icon "target" "nav-ico" %} Operations monitor
         </a>
         <a href="{% url 'instructor:dashboard' %}" class="nav-item {% if ns == 'instructor' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-          {% icon "gauge" "nav-ico" %} Overview
+          {% icon "gauge" "nav-ico" %} Command overview
         </a>
         <a href="{% url 'instructor:labs' %}" class="nav-item {% if request.resolver_match.url_name == 'labs' and ns == 'instructor' %}active{% endif %}">
-          {% icon "list" "nav-ico" %} All Labs
+          {% icon "list" "nav-ico" %} Case archive
         </a>
         <a href="{% url 'instructor:attempts' %}" class="nav-item {% if request.resolver_match.url_name == 'attempts' %}active{% endif %}">
-          {% icon "activity" "nav-ico" %} All Attempts
+          {% icon "activity" "nav-ico" %} Intercept log
         </a>
-        <a href="/admin/" class="nav-item">{% icon "server" "nav-ico" %} Django Admin</a>
+        <a href="/admin/" class="nav-item">{% icon "server" "nav-ico" %} System console</a>
       {% endif %}
     </nav>
 
@@ -55,7 +56,7 @@
         <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
         <div class="user-meta">
           <div class="user-name">{{ user.username }}</div>
-          <div class="user-role">{% if user.is_staff %}Instructor{% else %}Student{% endif %}</div>
+          <div class="user-role">{% if user.is_staff %}Command{% else %}Operator{% endif %}</div>
         </div>
       </div>
       <form action="{% url 'accounts:logout' %}" method="post" style="margin-top:8px;">

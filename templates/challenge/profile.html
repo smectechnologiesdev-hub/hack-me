@@ -1,45 +1,49 @@
 {% extends "challenge/_portal_base.html" %}
 {% load icons %}
-{% block title %}Profile · Vaultline Client Portal{% endblock %}
+{% block title %}Personnel file · SVR-04{% endblock %}
 
 {% block content %}
   <div class="page-head">
     <div>
-      <h1 style="margin-bottom:2px;">Profile</h1>
-      <p class="sub faint">Your account details and data.</p>
+      <span class="kicker kicker-crimson">Personnel file // Restricted</span>
+      <h1 style="margin:8px 0 2px;">Subject dossier</h1>
+      <p class="sub faint">Subject record and data-portability export.</p>
     </div>
   </div>
 
   <div class="grid grid-2" style="gap:18px; margin-top:12px;">
-    <!-- Personal details -->
-    <div class="card">
-      <div class="card-title">{% icon "user" "icon" %} Personal details</div>
+    <!-- Subject dossier -->
+    <div class="card ticked">
+      <div class="card-title">{% icon "user" "icon" %} Subject record</div>
       <table class="data" style="margin-top:8px;">
-        <tr><td class="faint">Name</td><td class="mono">{{ client.display_name|default:client.username }}</td></tr>
-        <tr><td class="faint">Username</td><td class="mono">{{ client.username }}</td></tr>
-        <tr><td class="faint">Tier</td><td>Vaultline Private</td></tr>
-        <tr><td class="faint">Advisor</td><td>K. Osei</td></tr>
+        <tr><td class="faint">Designation</td><td class="mono">{{ client.display_name|default:client.username }}</td></tr>
+        <tr><td class="faint">Operator ID</td><td class="mono">{{ client.username }}</td></tr>
+        <tr><td class="faint">Clearance</td><td class="mono">LEVEL 04 · RESTRICTED</td></tr>
+        <tr><td class="faint">Handler</td><td class="mono"><span class="redact">████████</span></td></tr>
       </table>
     </div>
 
-    <!-- Security -->
+    <!-- Access control -->
     <div class="card">
-      <div class="card-title">{% icon "shield" "icon" %} Security</div>
-      <p class="subtle" style="margin-top:10px;">Rotate your account password. Some features stay locked until you do.</p>
-      <a href="{% url 'challenge:rotate_password' %}" class="btn btn-block" style="margin-top:8px;">Change password {% icon "key" "icon" %}</a>
+      <div class="card-title">{% icon "shield" "icon" %} Access control</div>
+      <p class="subtle" style="margin-top:10px;">Rotate the account passphrase. Vault clearance is re-issued only after a rotation.</p>
+      <a href="{% url 'challenge:rotate_password' %}" class="btn btn-block" style="margin-top:8px;">Rotate passphrase {% icon "key" "icon" %}</a>
     </div>
   </div>
 
-  <!-- Data section — the over-sharing export -->
-  <div class="card mt-2">
-    <div class="card-title">{% icon "layers" "icon" %} Data</div>
-    <p class="subtle" style="margin-top:10px; max-width:60ch;">
-      Under our data-portability policy you can download a machine-readable copy of the
-      information Vaultline holds about your account.
+  <!-- Data export — the over-sharing leak -->
+  <div class="card mt-2 scan">
+    <div class="spread">
+      <div class="card-title" style="margin:0;">{% icon "layers" "icon" %} Data export</div>
+      <span class="stamp amber stamp-angled">Eyes only</span>
+    </div>
+    <p class="subtle" style="margin-top:12px; max-width:64ch;">
+      Under the data-portability directive, a machine-readable copy of all records held on this
+      subject can be exported. <span style="color:var(--warn);">Warning:</span> export includes sensitive key material.
     </p>
     <a href="{% url 'challenge:data_export' %}" class="btn btn-primary" style="margin-top:8px;">
-      {% icon "arrow-down" "icon" %} Download my data
+      {% icon "arrow-down" "icon" %} Download data export
     </a>
-    <p class="faint" style="margin-top:8px; font-size:.85rem;">Exports as <span class="mono">vaultline_data_export.json</span>.</p>
+    <p class="faint mono" style="margin-top:10px; font-size:.82rem; letter-spacing:.06em;">EVIDENCE // vaultline_data_export.json · CLASSIFIED</p>
   </div>
 {% endblock %}

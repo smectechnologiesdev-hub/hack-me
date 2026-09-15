@@ -3,8 +3,9 @@
 {% block title %}Register · {{ SITE_NAME }}{% endblock %}
 
 {% block auth_body %}
-  <h2 class="mt-0" style="font-size:1.6rem;">Open your Vaultline account</h2>
-  <p class="subtle">Join in seconds and access the portal.</p>
+  <span class="kicker kicker-brand">Clearance request</span>
+  <h2 class="mt-0" style="font-size:1.6rem; text-transform:uppercase; margin-top:10px;">Request operator access</h2>
+  <p class="subtle">Clearance is provisioned on registration. A target case file is assigned to you automatically.</p>
 
   {% if form.non_field_errors %}
     <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ form.non_field_errors|striptags }}</span></div>
@@ -18,9 +19,9 @@
       {% if form.username.errors %}<div class="form-errors">{{ form.username.errors|striptags }}</div>{% endif %}
     </div>
     <div class="form-row">
-      <label for="id_email">Email</label>
-      {{ form.email }}
-      {% if form.email.errors %}<div class="form-errors">{{ form.email.errors|striptags }}</div>{% endif %}
+      <label for="id_phone">Phone number</label>
+      {{ form.phone }}
+      {% if form.phone.errors %}<div class="form-errors">{{ form.phone.errors|striptags }}</div>{% endif %}
     </div>
     <div class="form-row">
       <label for="id_password1">Password</label>
@@ -33,8 +34,8 @@
       {{ form.password2 }}
       {% if form.password2.errors %}<div class="form-errors">{{ form.password2.errors|striptags }}</div>{% endif %}
     </div>
-    <button type="submit" class="btn btn-primary btn-block btn-lg">Create account {% icon "arrow-right" "icon" %}</button>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Provision clearance {% icon "arrow-right" "icon" %}</button>
   </form>
 
-  <p class="form-foot">Already a client? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+  <p class="form-foot">Already cleared? <a href="{% url 'accounts:login' %}">Operator sign-in</a></p>
 {% endblock %}

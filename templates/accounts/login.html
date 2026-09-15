@@ -3,8 +3,9 @@
 {% block title %}Log in · {{ SITE_NAME }}{% endblock %}
 
 {% block auth_body %}
-  <h2 class="mt-0" style="font-size:1.6rem;">Sign in to Vaultline</h2>
-  <p class="subtle">Access your secure account.</p>
+  <span class="kicker kicker-brand">Authorized personnel only</span>
+  <h2 class="mt-0" style="font-size:1.6rem; text-transform:uppercase; margin-top:10px;">Operator sign-in</h2>
+  <p class="subtle">Present your credentials to resume the operation.</p>
 
   {% if form.non_field_errors %}
     <div class="alert alert-error">{% icon "alert" "icon" %}<span>{{ form.non_field_errors|striptags }}</span></div>
@@ -23,14 +24,14 @@
       {% if form.password.errors %}<div class="form-errors">{{ form.password.errors|striptags }}</div>{% endif %}
     </div>
     <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in {% icon "arrow-right" "icon" %}</button>
+    <button type="submit" class="btn btn-primary btn-block btn-lg">Authenticate {% icon "arrow-right" "icon" %}</button>
   </form>
 
   <div class="form-row" style="margin-top:16px;">
     <a href="{% url 'accounts:otp_login' %}" class="btn btn-block" style="justify-content:center;">
-      {% icon "key" "icon" %} Sign in with OTP
+      {% icon "key" "icon" %} Access code sign-in
     </a>
   </div>
 
-  <p class="form-foot">New to Vaultline? <a href="{% url 'accounts:register' %}">Open an account</a></p>
+  <p class="form-foot">No clearance yet? <a href="{% url 'accounts:register' %}">Request operator access</a></p>
 {% endblock %}

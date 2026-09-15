@@ -53,7 +53,7 @@
 
   <div class="card" id="pane-json">
     <label for="json">Paste the full contents of vaultline_data_export.json</label>
-    <textarea id="json" placeholder='{ "account_key": "...", "account_blob": "...", "vault_key": "...", "vault_blob": "..." }'></textarea>
+    <textarea id="json" placeholder='{ "username": "...", "algorithm_key": "...", "encrypted_password": "...", "vault_id": "...", "vault_algorithm_key": "...", "encrypted_vault_password": "..." }'></textarea>
     <button onclick="runJson()">Decrypt everything</button>
     <div class="out" id="jsonOut"></div>
   </div>
@@ -61,7 +61,7 @@
   <div class="card" id="pane-single" hidden>
     <label for="blob">Ciphertext blob (starts with U2FsdGVk…)</label>
     <textarea id="blob" placeholder="U2FsdGVkX1..."></textarea>
-    <label for="secret">Secret (the matching account_key or vault_key)</label>
+    <label for="secret">Secret (the matching algorithm_key or vault_algorithm_key)</label>
     <input id="secret" placeholder="e.g. 7f99dce86d59acc8">
     <button onclick="runSingle()">Decrypt</button>
     <div class="out" id="singleOut"></div>
@@ -112,9 +112,11 @@
       return;
     }
     const lines = [];
+    if (data.username) lines.push('• Username (plain): ' + data.username);
+    if (data.vault_id) lines.push('• Vault ID (plain): ' + data.vault_id);
     const pairs = [
-      ['Account', 'account_blob', 'account_key'],
-      ['Vault',   'vault_blob',   'vault_key'],
+      ['Account password', 'encrypted_password', 'algorithm_key'],
+      ['Vault password',   'encrypted_vault_password', 'vault_algorithm_key'],
     ];
     let anyOk = false;
     for (const [name, bk, kk] of pairs) {
@@ -126,7 +128,7 @@
         lines.push('✗ ' + name + ': ' + e.message);
       }
     }
-    if (!lines.length) lines.push('No account_blob/vault_blob fields found in that JSON.');
+    if (!anyOk && lines.length <= 2) lines.push('No encrypted_password/encrypted_vault_password fields found in that JSON.');
     out.className = 'out ' + (anyOk ? 'ok' : 'err');
     out.textContent = lines.join('\n');
   }

@@ -25,6 +25,9 @@ class User(AbstractUser):
         default=Role.STUDENT,
         help_text="Application role. Instructor actions also require is_staff.",
     )
+    # Contact phone collected at registration (used to reach operators, e.g. a
+    # prize winner). Not a credential; auth is by username.
+    phone = models.CharField("phone number", max_length=20, blank=True)
 
     @property
     def is_instructor(self) -> bool:

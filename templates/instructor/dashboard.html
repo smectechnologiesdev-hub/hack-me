@@ -1,36 +1,37 @@
 {% extends "base_app.html" %}
 {% load icons %}
-{% block title %}Instructor · {{ SITE_NAME }}{% endblock %}
-{% block page_title %}Instructor overview{% endblock %}
+{% block title %}Command overview · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Command overview{% endblock %}
 
 {% block topbar_actions %}
-  <a class="btn btn-outline" href="{% url 'instructor:labs' %}">{% icon "list" "icon" %} Labs</a>
-  <a class="btn btn-outline" href="{% url 'instructor:attempts' %}">{% icon "activity" "icon" %} Attempts</a>
+  <a class="btn btn-outline" href="{% url 'instructor:labs' %}">{% icon "list" "icon" %} Case archive</a>
+  <a class="btn btn-outline" href="{% url 'instructor:attempts' %}">{% icon "activity" "icon" %} Intercepts</a>
 {% endblock %}
 
 {% block content %}
   <div class="page-head">
     <div>
-      <h1>Platform overview</h1>
-      <p class="sub">Aggregate activity across all students and labs.</p>
+      <span class="kicker kicker-crimson">Blacksite // Control</span>
+      <h1 style="margin:8px 0 2px;">Security operations center</h1>
+      <p class="sub">Aggregate activity across all operators and cases.</p>
     </div>
   </div>
 
   <div class="grid grid-4">
     <div class="stat fade-in-up">
-      <div class="stat-top"><span class="stat-label">Students</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div>
+      <div class="stat-top"><span class="stat-label">Operators</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div>
       <div class="stat-value">{{ overview.total_students }}</div>
     </div>
     <div class="stat fade-in-up d-1">
-      <div class="stat-top"><span class="stat-label">Active labs</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div>
+      <div class="stat-top"><span class="stat-label">Active cases</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div>
       <div class="stat-value accent">{{ overview.active_labs }}</div>
     </div>
     <div class="stat fade-in-up d-2">
-      <div class="stat-top"><span class="stat-label">Completed labs</span><span class="stat-ico v">{% icon "check-circle" "icon" %}</span></div>
+      <div class="stat-top"><span class="stat-label">Cases closed</span><span class="stat-ico v">{% icon "check-circle" "icon" %}</span></div>
       <div class="stat-value">{{ overview.completed_labs }}</div>
     </div>
     <div class="stat fade-in-up d-3">
-      <div class="stat-top"><span class="stat-label">Total attempts</span><span class="stat-ico c">{% icon "activity" "icon" %}</span></div>
+      <div class="stat-top"><span class="stat-label">Intercepts</span><span class="stat-ico c">{% icon "activity" "icon" %}</span></div>
       <div class="stat-value">{{ overview.total_attempts }}</div>
     </div>
   </div>

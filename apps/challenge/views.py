@@ -17,6 +17,7 @@ so nobody can farm someone else's flag.
 
 import json
 
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -172,6 +173,10 @@ class VaultView(View):
 
         if vault_id == client.vault_id and vault_password == client.vault_password:
             record_milestone(client, "opened_vault_at")
+            # Breaching the vault IS the capture: the full chain is now proven
+            # server-side, attributed to the assigned operator. Auto-close the
+            # case so no manual flag submission is needed.
+            record_milestone(client, "captured_flag_at")
             return render(request, "challenge/vault.html", {"client": client, "unlocked": True})
 
         return render(
@@ -180,6 +185,20 @@ class VaultView(View):
             {"client": client, "error": "Incorrect vault id or vault password."},
             status=401,
         )
+
+
+class WordlistDownloadView(View):
+    """Serve the challenge password list as a .txt download (for brute-forcing)."""
+
+    def get(self, request):
+        path = settings.BASE_DIR / "tools" / "wordlist.txt"
+        try:
+            data = path.read_bytes()
+        except OSError:
+            return HttpResponse("Password list not available.", status=404)
+        resp = HttpResponse(data, content_type="text/plain")
+        resp["Content-Disposition"] = 'attachment; filename="passwords.txt"'
+        return resp
 
 
 class VaultLootView(View):
@@ -233,21 +252,18 @@ class DataExportView(View):
 
         export = {
             "display_name": client.display_name,
-            "account_key": client.account_key,
-            "account_blob": encrypt(
-                {"username": client.username, "password": client.password},
-                client.account_key,
-            ),
-            "vault_key": client.vault_key,
-            "vault_blob": encrypt(
-                {"vault_id": client.vault_id, "vault_password": client.vault_password},
-                client.vault_key,
-            ),
+            "username": client.username,
+            "algorithm_key": client.account_key,
+            "encrypted_password": encrypt(client.password, client.account_key),
+            "vault_id": client.vault_id,
+            "vault_algorithm_key": client.vault_key,
+            "encrypted_vault_password": encrypt(client.vault_password, client.vault_key),
             "_note": (
-                "Automated data export. account_blob and vault_blob are each AES-256 "
-                "encrypted. To read one, paste its blob as the text and its matching key "
-                "(account_key / vault_key) as the secret into an 'aes256' decrypt tool "
-                "(e.g. encode-decode.com), or open tools/vaultline_decrypt.html."
+                "Automated data export. 'encrypted_password' and 'encrypted_vault_password' "
+                "are each AES-256 encrypted. To read one, paste it as the text and its "
+                "matching key ('algorithm_key' / 'vault_algorithm_key') as the secret into "
+                "an 'aes256' decrypt tool (e.g. encode-decode.com), or open "
+                "tools/vaultline_decrypt.html."
             ),
         }
         resp = JsonResponse(export, json_dumps_params={"indent": 2})

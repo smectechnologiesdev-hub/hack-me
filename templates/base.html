@@ -7,7 +7,7 @@
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
@@ -17,15 +17,20 @@
     <div class="container header-inner">
       <a class="brand" href="{% url 'core:home' %}">
         <span class="brand-logo">{% icon "shield" "icon" %}</span>
-        <span class="brand-name">Vaultline</span>
+        <span class="brand-name">Blacksite</span>
+        <span class="kicker kicker-crimson hide-sm" style="margin-left:2px;">// Classified</span>
       </a>
+      <div class="hide-sm meta-line row" style="gap:18px;">
+        <span><span class="faint">CASE</span> 09-15-26</span>
+        <span class="row" style="gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--brand);box-shadow:0 0 8px var(--brand);display:inline-block;"></span> OPERATION ACTIVE</span>
+      </div>
       <nav class="site-nav">
         {% if user.is_authenticated %}
-          <a href="{% url 'dashboard:home' %}" class="hide-sm">Dashboard</a>
-          <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-sm">Enter portal {% icon "arrow-right" "icon" %}</a>
+          <span class="nav-user hide-sm">● AUTHORIZED</span>
+          <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-sm">Enter operation {% icon "arrow-right" "icon" %}</a>
         {% else %}
-          <a href="{% url 'accounts:login' %}" class="hide-sm">Sign in</a>
-          <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Open account</a>
+          <a href="{% url 'accounts:login' %}" class="hide-sm">Login</a>
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Register</a>
         {% endif %}
       </nav>
     </div>
@@ -45,9 +50,9 @@
   <footer class="site-footer">
     <div class="container spread" style="flex-wrap:wrap; gap:14px;">
       <p class="footer-note">
-        Vaultline is a fictional, simulated environment for authorized security training.
+        BLACKSITE is a fictional, simulated environment for <strong>authorized training operations only</strong>.
       </p>
-      <span class="faint mono" style="font-size:.8rem;">© Vaultline</span>
+      <span class="faint mono" style="font-size:.78rem; letter-spacing:.14em;">CLASSIFIED // TRAINING</span>
     </div>
   </footer>
 

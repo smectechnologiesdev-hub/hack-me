@@ -1,37 +1,39 @@
 {% extends "challenge/_portal_base.html" %}
 {% load icons %}
-{% block title %}Vault · Vaultline Client Portal{% endblock %}
+{% block title %}Sealed vault · SVR-04{% endblock %}
 
 {% block content %}
-  <div style="max-width:520px; margin:0 auto;">
+  <div style="max-width:560px; margin:0 auto;">
 
     {% if request.GET.rotated %}
-      <div class="alert alert-success" style="margin-bottom:14px;">{% icon "check-circle" "icon" %}<span>Password rotated. Vault access is now enabled.</span></div>
+      <div class="alert alert-success" style="margin-bottom:14px;">{% icon "check-circle" "icon" %}<span>Passphrase rotated. Vault clearance granted.</span></div>
     {% endif %}
 
-    <div class="card">
+    <div class="card ticked scan">
       <div class="spread">
-        <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Open Vault</div>
-        {% if client.password_rotated %}<span class="badge badge-completed">Unlocked</span>{% else %}<span class="badge">🔒 Locked</span>{% endif %}
+        <div class="card-title" style="margin:0;">{% icon "lock" "icon" %} Sealed vault</div>
+        {% if client.password_rotated %}<span class="badge badge-completed">Clearance granted</span>{% else %}<span class="stamp">Access denied</span>{% endif %}
       </div>
 
       {% if unlocked %}
-        <!-- Vault opened: loot -->
-        <div class="alert alert-success" style="margin-top:14px;">{% icon "check-circle" "icon" %}<span>Vault opened. Files recovered.</span></div>
-        <table class="data" style="margin-top:10px;">
-          <thead><tr><th>File</th><th></th></tr></thead>
-          <tbody>
-            <tr>
-              <td class="mono">vault_records.txt</td>
-              <td style="text-align:right;"><a href="{% url 'challenge:vault_loot' %}" class="btn btn-primary btn-sm">{% icon "arrow-down" "icon" %} Download</a></td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="faint" style="margin-top:10px; font-size:.9rem;">The flag is inside the file. Submit it on your mission page to score.</p>
+        <!-- Vault breached: recovered evidence, case auto-closed -->
+        <div class="alert alert-success" style="margin-top:14px;">{% icon "check-circle" "icon" %}<span>Intelligence verified — <strong>CASE CLOSED</strong>. Clearance updated.</span></div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table class="data">
+            <thead><tr><th>Evidence artifact</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="mono">EVIDENCE_SVR-04.TXT</span> <span class="stamp muted" style="margin-left:8px;">Classified</span></td>
+                <td style="text-align:right;"><a href="{% url 'challenge:vault_loot' %}" class="btn btn-primary btn-sm">{% icon "arrow-down" "icon" %} Recover</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="faint" style="margin-top:10px; font-size:.9rem;">Capture logged automatically — your case is now recorded on the operations board. Recover the artifact for your records.</p>
 
       {% elif client.password_rotated %}
-        <!-- Rotated but not yet opened: credential input -->
-        <p class="subtle" style="margin-top:10px;">Enter your vault id and vault password to open the vault.</p>
+        <!-- Clearance granted, awaiting credentials -->
+        <p class="subtle" style="margin-top:10px;">Submit the recovered vault credentials to breach the sealed vault.</p>
         {% if error %}<div class="alert alert-error" style="margin-top:10px;">{% icon "alert" "icon" %}<span>{{ error }}</span></div>{% endif %}
         <form method="post" action="{% url 'challenge:vault' %}" novalidate style="margin-top:12px;">
           {% csrf_token %}
@@ -40,19 +42,19 @@
             <input type="text" name="vault_id" id="id_vid" class="input mono" autocomplete="off" placeholder="VLT-XXXX" autofocus>
           </div>
           <div class="form-row">
-            <label for="id_vpw">Vault password</label>
+            <label for="id_vpw">Vault passphrase</label>
             <input type="text" name="vault_password" id="id_vpw" class="input mono" autocomplete="off">
           </div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg">Open vault {% icon "arrow-right" "icon" %}</button>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">Breach vault {% icon "arrow-right" "icon" %}</button>
         </form>
 
       {% else %}
-        <!-- Locked: must rotate first -->
+        <!-- Sealed: must rotate first -->
         <p class="subtle" style="margin-top:12px;">
-          🔒 This vault is locked. For your security, vault access is enabled only after you
-          <strong>rotate your account password</strong>.
+          This vault is sealed. Vault clearance is re-issued only after the account passphrase is
+          <strong>rotated</strong>.
         </p>
-        <a href="{% url 'challenge:rotate_password' %}" class="btn btn-outline btn-block" style="margin-top:8px;">Rotate password to unlock {% icon "key" "icon" %}</a>
+        <a href="{% url 'challenge:rotate_password' %}" class="btn btn-outline btn-block" style="margin-top:8px;">Update password to get access {% icon "key" "icon" %}</a>
       {% endif %}
     </div>
   </div>

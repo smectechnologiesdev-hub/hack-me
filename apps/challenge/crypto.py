@@ -2,10 +2,10 @@
 AES-256-CBC helpers for the Vaultline vault credentials — encode-decode.com
 compatible scheme.
 
-The data export encrypts two small dicts — the account creds and the vault
-creds — each under its own per-client **secret** (``account_key`` /
+The data export encrypts two values — the account password and the vault
+password — each under its own per-client **secret** (``account_key`` /
 ``vault_key``), which the export leaks alongside the ciphertext.  So the crypto
-stage is: paste a blob and its matching secret into an "AES-256 decrypt" site.
+stage is: paste a value and its matching secret into an "AES-256 decrypt" site.
 
 This deliberately matches the scheme used by encode-decode.com's "aes256" tool
 (the site students actually reach for), so their ciphertext decrypts there:
@@ -29,8 +29,6 @@ import secrets
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-import json
-
 _IV = b"\x00" * 16
 
 
@@ -44,19 +42,24 @@ def generate_key() -> str:
     return secrets.token_hex(8)  # 16 hex chars — easy to copy into a website
 
 
-def encrypt(plaintext: dict, secret: str) -> str:
-    """Encrypt a small dict as base64 AES-256-CBC (zero IV, PKCS#7)."""
+def encrypt(plaintext: str, secret: str) -> str:
+    """Encrypt a plain string as base64 AES-256-CBC (zero IV, PKCS#7).
+
+    The plaintext is a raw value (e.g. a password), so decrypting on
+    encode-decode.com returns exactly that value — no JSON wrapping to confuse
+    a beginner.
+    """
     padder = padding.PKCS7(algorithms.AES.block_size).padder()
-    data = padder.update(json.dumps(plaintext).encode()) + padder.finalize()
+    data = padder.update(plaintext.encode()) + padder.finalize()
     encryptor = Cipher(algorithms.AES(_key_bytes(secret)), modes.CBC(_IV)).encryptor()
     ct = encryptor.update(data) + encryptor.finalize()
     return base64.b64encode(ct).decode()
 
 
-def decrypt(blob: str, secret: str) -> dict:
-    """Reverse :func:`encrypt`.  Raises on a wrong secret or bad padding."""
+def decrypt(blob: str, secret: str) -> str:
+    """Reverse :func:`encrypt`.  Returns the plain string; raises on bad padding."""
     ct = base64.b64decode(blob)
     decryptor = Cipher(algorithms.AES(_key_bytes(secret)), modes.CBC(_IV)).decryptor()
     padded = decryptor.update(ct) + decryptor.finalize()
     unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
-    return json.loads(unpadder.update(padded) + unpadder.finalize())
+    return (unpadder.update(padded) + unpadder.finalize()).decode()

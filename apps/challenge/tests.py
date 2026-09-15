@@ -87,20 +87,34 @@ class ChainTests(TestCase):
         })
         self.assertEqual(r.status_code, 403)
 
+    def test_opening_vault_auto_captures(self):
+        # Rotate, then open the vault — no flag submission at all.
+        self.client.post(reverse("challenge:rotate_password"),
+                         {"new_password": "abcd1234", "confirm_password": "abcd1234"})
+        r = self.client.post(reverse("challenge:vault"), {
+            "vault_id": self.target.vault_id, "vault_password": self.target.vault_password,
+        })
+        self.assertEqual(r.status_code, 200)
+        self.target.refresh_from_db()
+        # Breaching the vault auto-closes the case (captured_flag_at set).
+        self.assertIsNotNone(self.target.opened_vault_at)
+        self.assertIsNotNone(self.target.captured_flag_at)
+        self.assertTrue(self.target.is_solved)
+
     def test_data_export_leaks_keys_and_decrypts(self):
         r = self.client.get(reverse("challenge:data_export"))
         export = r.json()
-        # Account blob -> {username, password}.
-        self.assertIn("account_key", export)
-        acct = crypto.decrypt(export["account_blob"], export["account_key"])
-        self.assertEqual(acct["username"], self.target.username)
-        self.assertEqual(acct["password"], self.target.password)
-        # Vault blob -> {vault_id, vault_password}, under a *different* key.
-        self.assertIn("vault_key", export)
-        self.assertNotEqual(export["account_key"], export["vault_key"])
-        creds = crypto.decrypt(export["vault_blob"], export["vault_key"])
-        self.assertEqual(creds["vault_id"], self.target.vault_id)
-        self.assertEqual(creds["vault_password"], self.target.vault_password)
+        # username + vault_id are plaintext (given directly).
+        self.assertEqual(export["username"], self.target.username)
+        self.assertEqual(export["vault_id"], self.target.vault_id)
+        # encrypted_password -> the account password string.
+        self.assertIn("algorithm_key", export)
+        pw = crypto.decrypt(export["encrypted_password"], export["algorithm_key"])
+        self.assertEqual(pw, self.target.password)
+        # encrypted_vault_password -> the vault password, under a *different* key.
+        self.assertNotEqual(export["algorithm_key"], export["vault_algorithm_key"])
+        vpw = crypto.decrypt(export["encrypted_vault_password"], export["vault_algorithm_key"])
+        self.assertEqual(vpw, self.target.vault_password)
 
     def test_full_chain_scores_1000(self):
         self.client.get(reverse("challenge:data_export"))
@@ -139,7 +153,7 @@ class RegistrationAssignmentTests(TestCase):
         spare = make_target(username="spare.one")
         self.assertIsNone(spare.assigned_to)
         self.client.post(reverse("accounts:register"), {
-            "username": "newstudent", "email": "n@example.com",
+            "username": "newstudent", "phone": "+1 555 0100",
             "password1": "Str0ng-Pass-99!", "password2": "Str0ng-Pass-99!",
         })
         spare.refresh_from_db()

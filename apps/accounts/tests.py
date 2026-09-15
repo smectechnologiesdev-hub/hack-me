@@ -15,7 +15,7 @@ class RegistrationTests(TestCase):
             reverse("accounts:register"),
             {
                 "username": "newstudent",
-                "email": "s@example.com",
+                "phone": "+1 555 0100",
                 "password1": "a-strong-pass-9x",
                 "password2": "a-strong-pass-9x",
             },
@@ -33,7 +33,7 @@ class RegistrationTests(TestCase):
             reverse("accounts:register"),
             {
                 "username": "sneaky",
-                "email": "x@example.com",
+                "phone": "+1 555 0111",
                 "password1": "a-strong-pass-9x",
                 "password2": "a-strong-pass-9x",
                 "is_staff": "true",

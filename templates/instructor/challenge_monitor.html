@@ -1,48 +1,49 @@
 {% extends "base_app.html" %}
 {% load icons %}
-{% block title %}Challenge Monitor · {{ SITE_NAME }}{% endblock %}
-{% block page_title %}Challenge Monitor{% endblock %}
+{% block title %}Command · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Command{% endblock %}
 
 {% block topbar_actions %}
-  <a class="btn btn-outline" href="{% url 'challenge:scoreboard' %}" target="_blank">{% icon "activity" "icon" %} Public scoreboard</a>
+  <a class="btn btn-outline" href="{% url 'challenge:scoreboard' %}" target="_blank">{% icon "activity" "icon" %} Operations board</a>
 {% endblock %}
 
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Vaultline Heist — live monitor</h1>
-    <p class="sub faint">Who's ahead, who's behind, and every section as it's cracked.</p>
+    <span class="kicker kicker-crimson">Blacksite // Control</span>
+    <h1 style="margin:8px 0 2px;">Live operations command</h1>
+    <p class="sub faint">Every clearance change and evidence recovery, in real time.</p>
   </div>
-  <span class="chip" id="mon-status">{% icon "activity" "icon" %} connecting…</span>
+  <span class="chip" id="mon-status">{% icon "activity" "icon" %} establishing link…</span>
 </div>
 
 <div class="grid grid-4" style="margin-bottom:18px;">
-  <div class="stat"><div class="stat-top"><span class="stat-label">Players</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div><div class="stat-value" id="stat-players">—</div></div>
-  <div class="stat"><div class="stat-top"><span class="stat-label">Solved</span><span class="stat-ico v">{% icon "check-circle" "icon" %}</span></div><div class="stat-value" id="stat-solved">—</div></div>
-  <div class="stat"><div class="stat-top"><span class="stat-label">Leader</span><span class="stat-ico">{% icon "target" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-leader">—</div></div>
-  <div class="stat"><div class="stat-top"><span class="stat-label">First blood</span><span class="stat-ico">{% icon "zap" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-firstblood">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">Operators online</span><span class="stat-ico c">{% icon "users" "icon" %}</span></div><div class="stat-value" id="stat-players">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">Cases closed</span><span class="stat-ico">{% icon "check-circle" "icon" %}</span></div><div class="stat-value" id="stat-solved">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">Lead operator</span><span class="stat-ico">{% icon "target" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-leader">—</div></div>
+  <div class="stat"><div class="stat-top"><span class="stat-label">First blood</span><span class="stat-ico v">{% icon "zap" "icon" %}</span></div><div class="stat-value" style="font-size:1.3rem;" id="stat-firstblood">—</div></div>
 </div>
 
 <div class="grid grid-2" style="gap:18px; align-items:start;">
   <!-- Ranking -->
   <div class="card">
-    <div class="card-title">Ranking</div>
+    <div class="card-title">Operations ranking</div>
     <div class="table-wrap">
       <table class="data">
         <thead>
-          <tr><th style="width:40px;">#</th><th>Player</th><th>Stages</th><th style="text-align:right;">Points</th><th>Last seen</th></tr>
+          <tr><th style="width:40px;">Rank</th><th>Operator</th><th>Objectives</th><th style="text-align:right;">Score</th><th>Last seen</th></tr>
         </thead>
         <tbody id="rank-body"><tr><td colspan="5" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Activity log -->
+  <!-- Live intelligence -->
   <div class="card">
-    <div class="card-title">Activity log</div>
+    <div class="card-title">Live intelligence // Intercept</div>
     <div class="table-wrap" style="max-height:520px; overflow-y:auto;">
       <table class="data">
-        <thead><tr><th>Time</th><th>Player</th><th>Section reached</th><th style="text-align:right;">+pts</th></tr></thead>
+        <thead><tr><th>Time</th><th>Operator</th><th>Section reached</th><th style="text-align:right;">+pts</th></tr></thead>
         <tbody id="feed-body"><tr><td colspan="4" class="faint" style="text-align:center;padding:22px;">Loading…</td></tr></tbody>
       </table>
     </div>
@@ -115,9 +116,9 @@
       const firstFlag = [...feed].reverse().find(e => e.field === "captured_flag_at");
       document.getElementById("stat-firstblood").textContent = firstFlag ? firstFlag.handle : "—";
 
-      document.getElementById("mon-status").innerHTML = "live · " + new Date().toLocaleTimeString();
+      document.getElementById("mon-status").innerHTML = "LIVE · " + new Date().toLocaleTimeString();
     }catch(err){
-      document.getElementById("mon-status").textContent = "offline — retrying…";
+      document.getElementById("mon-status").textContent = "SIGNAL LOST — retrying…";
     }
   }
   poll();

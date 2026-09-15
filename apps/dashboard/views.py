@@ -25,8 +25,8 @@ User = get_user_model()
 class DashboardHomeView(LoginRequiredMixin, TemplateView):
     """/dashboard/ — the participant's mission briefing.
 
-    Shows the student their assigned target, the starter script, tiered hints,
-    live progress, and the flag-submission form.
+    Shows the student their assigned target, tiered hints, live progress, and
+    the flag-submission form.
     """
 
     template_name = "dashboard/home.html"

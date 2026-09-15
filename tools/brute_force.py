@@ -13,7 +13,7 @@ Usage:
 import sys
 import requests
 
-username = sys.argv[1] if len(sys.argv) > 1 else "w.brooks"
+username = sys.argv[1] if len(sys.argv) > 1 else "b.hollis"
 base = (sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8000").rstrip("/")
 wordlist = sys.argv[3] if len(sys.argv) > 3 else "tools/wordlist.txt"
 url = f"{base}/portal/login/"

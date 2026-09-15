@@ -1,15 +1,16 @@
 {% extends "base_app.html" %}
 {% load static icons %}
-{% block title %}Mission · {{ SITE_NAME }}{% endblock %}
-{% block page_title %}Your mission{% endblock %}
+{% block title %}Operator Brief · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Operator brief{% endblock %}
 
 {% block content %}
 <div class="page-head">
   <div>
-    <h1 style="margin-bottom:2px;">Vaultline Heist</h1>
-    <p class="sub faint">Breach your assigned client, open their vault, capture the flag.</p>
+    <span class="kicker kicker-brand">Case file // 09-15-26</span>
+    <h1 style="margin:8px 0 2px;">Operation Blacksite</h1>
+    <p class="sub faint">Breach the assigned target, recover the sealed evidence, authenticate the intelligence.</p>
   </div>
-  <a href="{% url 'challenge:scoreboard' %}" class="btn btn-outline btn-sm">{% icon "activity" "icon" %} Scoreboard</a>
+  <a href="{% url 'challenge:scoreboard' %}" class="btn btn-outline btn-sm">{% icon "activity" "icon" %} Operations board</a>
 </div>
 
 {% if flag_result %}
@@ -19,10 +20,11 @@
 {% endif %}
 
 {% if not target %}
-  <div class="card">
-    <div class="card-title">{% icon "alert" "icon" %} No target assigned yet</div>
+  <div class="card ticked">
+    <span class="stamp stamp-angled">Access denied</span>
+    <div class="card-title" style="margin-top:14px;">{% icon "alert" "icon" %} No case assigned</div>
     <p class="subtle" style="margin-top:8px;">
-      You don't have a target account yet. Ask your instructor to run
+      No target case file has been assigned to your clearance yet. Command must run
       <span class="mono">provision_challenge --assign</span>, then refresh this page.
     </p>
   </div>
@@ -30,14 +32,26 @@
 
   <div class="grid grid-2" style="gap:18px; align-items:start;">
     <!-- Target + progress -->
-    <div class="card">
-      <div class="card-title">{% icon "target" "icon" %} Your target</div>
-      <table class="data" style="margin-top:8px;">
-        <tr><td class="faint">Client username</td><td class="mono" style="font-weight:700;">{{ target.username }}</td></tr>
-        <tr><td class="faint">Portal login</td><td class="mono">{{ request.scheme }}://{{ request.get_host }}/portal/login/</td></tr>
+    <div class="card scan">
+      <div class="spread">
+        <div class="card-title" style="margin:0;">{% icon "target" "icon" %} Assigned target</div>
+        <span class="stamp muted">Restricted</span>
+      </div>
+      <table class="data" style="margin-top:12px;">
+        <tr><td class="faint">Target username</td><td class="mono" style="font-weight:700;">{{ target.username }}</td></tr>
+        <tr><td class="faint">Target system</td><td class="mono">{{ request.scheme }}://{{ request.get_host }}/portal/login/</td></tr>
       </table>
+      <a href="{% url 'challenge:portal_login' %}" class="btn btn-primary btn-sm" style="margin-top:14px;">Access target system {% icon "arrow-right" "icon" %}</a>
 
-      <div class="card-title" style="margin-top:18px;">Progress</div>
+      <hr class="divider-dashed" style="margin:16px 0;">
+      <div class="kicker kicker-brand">How to gain access</div>
+      <p class="subtle" style="margin:8px 0 10px; font-size:.9rem;">
+        Break the target login two ways — <strong>brute-force</strong> the password using the wordlist
+        below, or exploit a <strong>SQL injection</strong> in the login form. See the briefings for detail.
+      </p>
+      <a href="{% url 'challenge:wordlist' %}" class="btn btn-outline btn-sm">{% icon "arrow-down" "icon" %} Download password list (.txt)</a>
+
+      <div class="card-title" style="margin-top:18px;">Case progress</div>
       <ul class="check" style="margin-top:8px; list-style:none; padding-left:0;">
         {% for step in target.progress %}
           <li style="display:flex; align-items:center; gap:10px; padding:4px 0;">
@@ -47,77 +61,44 @@
         {% endfor %}
       </ul>
       <div class="spread" style="margin-top:10px;">
-        <span class="faint mono" style="font-size:.85rem;">{{ target.stages_done }}/5 stages</span>
+        <span class="faint mono" style="font-size:.8rem; letter-spacing:.08em;">{{ target.stages_done }}/5 OBJECTIVES</span>
         <span class="badge {% if target.is_solved %}badge-completed{% endif %}">{{ target.points }} pts</span>
       </div>
     </div>
 
-    <!-- Submit flag -->
-    <div class="card">
-      <div class="card-title">{% icon "key" "icon" %} Submit flag</div>
-      <p class="subtle" style="margin-top:8px;">Found <span class="mono">HM{…}</span> in the vault? Submit it to score.</p>
-      <form method="post" action="{% url 'challenge:flag_submit' %}" style="margin-top:10px;">
-        {% csrf_token %}
-        <div class="form-row">
-          <input type="text" name="flag" class="input mono" placeholder="HM{...}" autocomplete="off" {% if target.is_solved %}disabled{% endif %}>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" {% if target.is_solved %}disabled{% endif %}>
-          {% if target.is_solved %}Captured ✓{% else %}Submit flag{% endif %}
-        </button>
-      </form>
+    <!-- Case status -->
+    <div class="card ticked">
+      <div class="card-title">{% icon "shield" "icon" %} Case status</div>
+      {% if target.is_solved %}
+        <div class="stamp olive stamp-angled" style="margin-top:6px;">Case closed</div>
+        <p class="subtle" style="margin-top:14px;">Intelligence verified — clearance updated. Recovered evidence logged to the operations board.</p>
+        <div class="win-password" style="font-size:1.1rem; margin-top:8px;">{{ target.flag }}</div>
+      {% else %}
+        <span class="stamp">Investigation active</span>
+        <p class="subtle" style="margin-top:14px;">
+          Breach the sealed vault to recover the intelligence. Capture is
+          <strong>verified automatically</strong> the moment the vault is opened — no manual submission.
+        </p>
+        <div class="meta-line" style="margin-top:10px;">Objectives cleared: {{ target.stages_done }} / 5</div>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Starter script -->
+  <!-- Intelligence briefings (hints) -->
   <div class="card mt-2">
-    <div class="spread">
-      <div class="card-title" style="margin:0;">{% icon "code" "icon" %} Starter script (brute-force)</div>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="copyStarter(this)">{% icon "copy" "icon" %} Copy</button>
-    </div>
-    <pre class="code-block" id="starter" style="margin-top:10px; white-space:pre; overflow-x:auto;"><code>import requests
-
-URL      = "{{ request.scheme }}://{{ request.get_host }}/portal/login/"
-USERNAME = "{{ target.username }}"
-
-with open("rockyou.txt", encoding="latin-1", errors="ignore") as f:
-    for line in f:
-        password = line.strip()
-        if not password:
-            continue
-        r = requests.post(URL, json={"username": USERNAME, "password": password})
-        if r.json().get("success"):
-            print("FOUND:", password)
-            break
-</code></pre>
-    <p class="faint" style="margin-top:8px; font-size:.85rem;">
-      Download <span class="mono">rockyou.txt</span> (a standard wordlist), put it next to this script, and run it.
-      Ask the AI assistant or search online if you get stuck at any stage.
-    </p>
-  </div>
-
-  <!-- Hints -->
-  <div class="card mt-2">
-    <div class="card-title">{% icon "book" "icon" %} Hints</div>
-    <details style="margin-top:6px;"><summary>Stage 1 — getting in</summary>
+    <div class="card-title">{% icon "book" "icon" %} Intelligence // Briefings</div>
+    <p class="meta-line" style="margin:0 0 10px;">Clearance required — expand to decrypt.</p>
+    <details style="margin-top:6px;"><summary>Briefing 01 — Gaining access</summary>
       <p class="subtle" style="margin-top:6px;">Two ways in: brute-force the password with a wordlist (rockyou), or SQL-injection. The login is a classic vulnerable form — search "SQL injection login bypass".</p></details>
-    <details style="margin-top:6px;"><summary>Stage 2 — the vault is locked</summary>
+    <details style="margin-top:6px;"><summary>Briefing 02 — The vault is sealed</summary>
       <p class="subtle" style="margin-top:6px;">The vault says to rotate your password first. Look in <strong>Profile → Data</strong> while you're there.</p></details>
-    <details style="margin-top:6px;"><summary>Stage 3 — the data export</summary>
-      <p class="subtle" style="margin-top:6px;">"Download my data" gives a JSON file. It over-shares: it includes two secrets (<span class="mono">account_key</span>, <span class="mono">vault_key</span>) and two encrypted blobs (<span class="mono">account_blob</span>, <span class="mono">vault_blob</span>).</p></details>
-    <details style="margin-top:6px;"><summary>Stage 4 — decrypt the credentials</summary>
-      <p class="subtle" style="margin-top:6px;">Each blob is <strong>AES-256</strong>. <strong>Website</strong>: open an "aes256" decrypt tool (e.g. <span class="mono">encode-decode.com</span>), paste a blob as the text and its matching key (<span class="mono">account_key</span>/<span class="mono">vault_key</span>) as the secret, hit Decrypt. Or open the bundled <span class="mono">tools/vaultline_decrypt.html</span>, or run <span class="mono">tools/decrypt_vault.py</span>. <span class="mono">vault_blob</span> + <span class="mono">vault_key</span> → the vault id + password for Stage 5.</p></details>
-    <details style="margin-top:6px;"><summary>Stage 5 — open the vault</summary>
-      <p class="subtle" style="margin-top:6px;">Rotate your password (unlocks the input), then type the decrypted vault id + vault password. Download the file — the flag is inside.</p></details>
+    <details style="margin-top:6px;"><summary>Briefing 03 — The leaked export</summary>
+      <p class="subtle" style="margin-top:6px;">"Download my data" gives a JSON file. It over-shares: your <span class="mono">username</span> and <span class="mono">vault_id</span> are in plain text, plus two encryption keys (<span class="mono">algorithm_key</span>, <span class="mono">vault_algorithm_key</span>) and two encrypted values (<span class="mono">encrypted_password</span>, <span class="mono">encrypted_vault_password</span>).</p></details>
+    <details style="margin-top:6px;"><summary>Briefing 04 — Decrypt the evidence</summary>
+      <p class="subtle" style="margin-top:6px;">Each encrypted value is <strong>AES-256</strong>. <strong>Website</strong>: open an "aes256" decrypt tool (e.g. <span class="mono">encode-decode.com</span>), paste an encrypted value as the text and its matching key (<span class="mono">encrypted_vault_password</span> → <span class="mono">vault_algorithm_key</span>) as the secret, hit Decrypt. Or open the bundled <span class="mono">tools/vaultline_decrypt.html</span>, or run <span class="mono">tools/decrypt_vault.py</span>. Decrypting <span class="mono">encrypted_vault_password</span> gives the vault password; the vault id is already in plain text.</p></details>
+    <details style="margin-top:6px;"><summary>Briefing 05 — Breach the vault</summary>
+      <p class="subtle" style="margin-top:6px;">Rotate your password (unlocks the input), then type the plain-text vault id + the decrypted vault password. Download the file — the recovered intelligence is inside.</p></details>
   </div>
 
 {% endif %}
-{% endblock %}
-
-{% block scripts %}
-<script>
-  function copyStarter(btn){
-    const text = document.getElementById("starter").innerText;
-    navigator.clipboard.writeText(text).then(()=>{ btn.textContent = "Copied ✓"; setTimeout(()=>location.reload && (btn.textContent="Copy"), 1500); });
-  }
-</script>
 {% endblock %}

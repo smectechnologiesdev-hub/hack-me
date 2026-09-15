@@ -21,6 +21,9 @@ urlpatterns = [
     path("portal/vault/", views.VaultView.as_view(), name="vault"),
     path("portal/vault/loot/", views.VaultLootView.as_view(), name="vault_loot"),
 
+    # Password list download (for brute-forcing the target login).
+    path("passwords.txt", views.WordlistDownloadView.as_view(), name="wordlist"),
+
     # Scoreboard + flag submission.
     path("scoreboard/", views.ScoreboardView.as_view(), name="scoreboard"),
     path("scoreboard/data/", views.ScoreboardDataView.as_view(), name="scoreboard_data"),
