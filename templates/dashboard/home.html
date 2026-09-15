@@ -44,12 +44,7 @@
       <a href="{% url 'challenge:portal_login' %}" class="btn btn-primary btn-sm" style="margin-top:14px;">Access target system {% icon "arrow-right" "icon" %}</a>
 
       <hr class="divider-dashed" style="margin:16px 0;">
-      <div class="kicker kicker-brand">How to gain access</div>
-      <p class="subtle" style="margin:8px 0 10px; font-size:.9rem;">
-        Break the target login two ways — <strong>brute-force</strong> the password using the wordlist
-        below, or exploit a <strong>SQL injection</strong> in the login form. See the briefings for detail.
-      </p>
-      <a href="{% url 'challenge:wordlist' %}" class="btn btn-outline btn-sm">{% icon "arrow-down" "icon" %} Download password list (.txt)</a>
+      <a href="{% url 'challenge:wordlist' %}" class="faint" style="font-size:.85rem; text-decoration:none;">Download</a>
 
       <div class="card-title" style="margin-top:18px;">Case progress</div>
       <ul class="check" style="margin-top:8px; list-style:none; padding-left:0;">

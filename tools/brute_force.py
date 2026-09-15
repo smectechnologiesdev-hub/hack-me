@@ -7,7 +7,7 @@ Edit USERNAME (and URL for the live site), then run:  python brute_force.py
 
 import requests
 
-USERNAME = "v.fenwick"                              # your target's username
+USERNAME = "b.hollis"                              # your target's username
 URL      = "https://hackme.smecworkspace.com/portal/login/"    # the login endpoint
 WORDLIST = "tools/wordlist.txt"                      # the password list
 
